@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage{hyperref}
+\marginparwidth 0pt
+\oddsidemargin 0pt
+\evensidemargin 0pt
+\topmargin 0pt
+\textwidth 16cm
+\textheight 21cm
+
+\usepackage{Sweave}
+
+\begin{document}
+
+\SweaveOpts{concordance=TRUE}
+
+\title{Reading Raw MUGA and MegaMUGA Data}
+\author{Daniel M. Gatti}
+\date{03 October 2013}
+\maketitle
+
+\section{Extracting Genotypes and Intensities}
+
+This vignette explains how to read in the raw MUGA and MegaMUGA data as it is received from \href{http://www.neogen.com/Agrigenomics/ResearchDevelop.html}{GeneSeek} (Lincoln, NE). When genotyping \href{http://jaxmice.jax.org/strain/009376.html}{Diversity Outbred} (DO) mice, GeneSeek provides six files:
+
+\begin{enumerate}
+  \item{\verb|*_|DNAReport.csv: Quality metrics per sample containing allele call rates and frequencies.}
+  \item{\verb|*_|FinalReport.txt: The main data file containing allele calls and intensities.}
+  \item{\verb|*_|LocusSummary.csv: Quality metrics for each marker.}
+  \item{\verb|*_|LocusXDNA.csv: Combined sample and marker quality report.}
+  \item{Sample\verb|_|map.txt: A list of sample IDs and plate locations.}
+  \item{SNP\verb|_|Map.txt: A list of the SNPs assayed with genomic locations.}
+\end{enumerate}
+
+The two files required by DOQTL are \verb|*_|FinalReport.txt and Sample\verb|_|map.txt. They are expected to be in the same directory. Each data set from GeneSeek should also be in a separate directory. 
+
+\vspace{5 mm}
+
+Below, we load in example data and write it out to directories similar to what GeneSeek produces.
+
+<<label=setup>>=
+library(DOQTL)
+wd = tempdir()
+data.dirs = paste(wd, "/DataSet", 1:2, sep = "")
+dir.create(data.dirs[1])
+dir.create(data.dirs[2])
+library(MUGAExampleData)
+data(FinalReport1)
+data(Samples1)
+write(FinalReport1, file = paste(data.dirs[1], "DataSet1_FinalReport.txt", 
+                                 sep = "/"))
+write(Samples1, file = paste(data.dirs[1], "Sample_Map.txt", sep = "/"))
+data(FinalReport2)
+data(Samples2)
+write(FinalReport2, file = paste(data.dirs[2], "DataSet2_FinalReport.txt",
+                                sep = "/"))
+write(Samples2, file = paste(data.dirs[2], "Sample_Map.txt", sep = "/"))
+@
+
+The \verb|*_|FinalReport.txt files are tab delimited files that contain 11 columns.
+
+\begin{enumerate}
+  \item{SNP Name: marker ID}
+  \item{Sample ID: sample ID}
+  \item{Allele1 - Forward: allele call for one DNA strand}
+  \item{Allele2 - Forward: allele call for the other DNA strand}
+  \item{X: normalized X intensity}
+  \item{Y: normalized X intensity}
+  \item{GC Score: uncertain, ranges from 0 to 1, with a skew toward 1}
+  \item{Theta: X and Y intensity transfomred to $\theta$ }
+  \item{X Raw: raw X intensity}
+  \item{Y Raw: raw Y intensity}
+  \item{R: X and Y intensity transfomred to $\rho$}
+\end{enumerate}
+
+<<label=FinalReport>>=
+read.delim(paste(data.dirs[1], "DataSet1_FinalReport.txt", 
+           sep = "/"), nrows = 6 ,skip = 9)
+@
+
+Each sample is listed sequentially. Note that the markers are not in genomic order in this file.
+
+\vspace{5 mm}
+
+The Sample\verb|_|Map.txt files contain a listing of the sample IDs and plate locations for each sample.
+
+<<label=SampleMap>>=
+read.delim(paste(data.dirs[1], "Sample_Map.txt", sep = "/"), nrows = 6)
+@
+
+In practice, you will have one or more directories with genotyping results from GeneSeek. The genotype, X and Y intensity data can be extracted from these directories using the function \texttt{extract.raw.data()}. Place the path to the data directories in the \texttt{in path} argument, the output path in \texttt{out path} and specify whether the array is \texttt{muga} or \texttt{megamuga} in the \texttt{array} argument.
+
+<<label=extract_raw_data,results=hide>>=
+extract.raw.data(in.path = data.dirs, out.path = wd, array = "muga")
+@
+
+This will create x.txt, y.txt, geno.txt and call.rate.batch.txt files in the ouput directory.
+
+<<>>=
+list.files(path = wd, pattern = "txt$")
+@
+
+Optionally, you may filter out samples with low allele call rates. Samples with call rates below 90\% 
+often produce poor genome reconstructions. The function removes samples with call rates below the
+threshold (default = 0.9), writes out the x.filt.txt, y.filt.txt and geno.filt.txt files and returns
+the samples that were removed.
+
+<<label=filter_samples,results=hide>>=
+removed = filter.samples(path = wd)
+@
+<<>>=
+removed
+@
+
+Three samples had call rates below 0.9.
+
+\vspace{5 mm}
+
+Finally, you may perform batch normalization on the intensity files. Currently, this simply subtracts the median intensity from each batch. Future improvements may be made to these methods. You must provide the SNP locations in the \texttt{snps} argument. We obtain these from the \href{ftp://ftp.jax.org/MUGA/}{JAX FTP site}.
+
+<<label=batch_normalize>>=
+load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
+batch.normalize(path = wd, snps = muga_snps)
+@
+
+This will write out the files x.filt.norm.txt and  y.filt.norm.txt.  You may then use these as input into DOQTL's genome reconstruction pipeline.
+
+\end{document}

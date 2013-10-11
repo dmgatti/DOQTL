@@ -1,0 +1,3 @@
+# the warning flags are gcc specific so they must be commented out in
+# distributed versions
+PKG_CFLAGS= -Wall
