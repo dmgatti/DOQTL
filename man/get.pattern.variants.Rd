@@ -32,4 +32,3 @@
   snp.subset = get.pattern.variants(example.snps[1:1000,], 
   strain.subset = c("A/J", "NOD/ShiLtJ", "NZO/HlLtJ", "AKR/J"))
 }
-

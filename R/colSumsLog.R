@@ -8,9 +8,8 @@ colSumsLog = function(logmat) {
   max.index = apply(logmat, 2, which.max) + 0:(ncol(logmat) - 1) * nrow(logmat)
   retval = logmat[max.index]
   logmat[max.index] = NA
-  logmat = logmat - matrix(retval, nrow(logmat), ncol(logmat), byrow = T)
+  logmat = logmat - matrix(retval, nrow(logmat), ncol(logmat), byrow = TRUE)
   logmat[logmat < get.machine.precision()] = NA
-  retval = retval + log1p(colSums(exp(logmat), na.rm = T))
+  retval = retval + log1p(colSums(exp(logmat), na.rm = TRUE))
   return(retval)
 } # colSumsLog
-

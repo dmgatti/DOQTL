@@ -16,7 +16,7 @@
   }
 }
 \value{
-  List with the founders data structure updated to include missing F1 samples.
+  List with the founders data structure updated to include missing FALSE1 samples.
 }
 \author{
   Daniel Gatti
@@ -24,7 +24,6 @@
 \examples{
   \dontrun{
     load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
-    founders = add.missing.F1s(founders, snps = muga_snps)
+    founders = add.missing.FALSE1s(founders, snps = muga_snps)
   }
 }
-

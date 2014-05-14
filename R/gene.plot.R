@@ -11,16 +11,12 @@
 # Returns: data.frame with gene symbol, gene start, gene end, text start, 
 #          text end and row.
 gene.plot = function(mgi, col = "black", ...) {
-
   previous.cex = par("cex")
-
-  call = match.call(expand.dots = T)
-
+  call = match.call(expand.dots = TRUE)
   # Get the Chr, start and end.
   chr   = mgi$seqid[1]
   start = min(mgi$start)
   end   = max(mgi$stop)
-
   # Line the genes up sequentially in columns.
   # Locs holds the gene symbol, the gene start and end, the text start and end,
   # as well as the row to plot on.
@@ -28,7 +24,6 @@ gene.plot = function(mgi, col = "black", ...) {
          gend = mgi$stop * 1e-6, tstart = rep(0, nrow(mgi)),
          tend = rep(0, nrow(mgi)), row = 1:nrow(mgi))
   par(lend = 2)
-
   m = which(names(call) == "xlim")
   if(length(m) > 0) {
     plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
@@ -37,20 +32,16 @@ gene.plot = function(mgi, col = "black", ...) {
          xlab = "", ylab = "", yaxt = "n", ...)
   } # else
   mtext(side = 1, line = 2, text = paste("Chr", chr, "(Mb)"))
-
   old.cex = 100
   iter = 0
-  while(abs(par("cex") - old.cex) > 0.1 & iter < 9) {
-
+  while(abs(par("cex") - old.cex) > 0.1 & iter < 4) {
     # Offset between gene end and text start.
     offset = strwidth("i")
     locs$tstart = locs$gend   + offset
     locs$tend   = locs$tstart + strwidth(mgi$Name)
-
     locs$row = 1:nrow(locs)
     locs = line.up.genes(locs)
     locs = resolve.collisions(locs)
-
     # Determine the number of rows and the row height.
     max.row = max(locs$row) + 1
     usr = par("usr") 
@@ -59,25 +50,19 @@ gene.plot = function(mgi, col = "black", ...) {
     par(cex = old.cex * rowht / strheight("W"))
     iter = iter + 1
   } # for(i)
-
   par(cex = 0.9 * par("cex"))
-
   # Plot the genes.
   rect(xleft = locs$gstart, ybottom = usr[4] - rowht * (locs$row + 1) + 0.05 * rowht, 
        xright = locs$gend, ytop = usr[4] - rowht * locs$row - 0.05 * rowht,
        density = -1, col = col, border = col)
   text(x = locs$tstart, y = usr[4] - rowht * locs$row, 
        labels = locs$name, adj = c(0,1), col = col)
-
   par(cex = previous.cex)
-
   return(locs)
-
 } # gene.plot()
-
-
+# Place the genes in rows from the top of the screen to the bottom.
+# Start a new column when the row is at the bottom of the page.
 line.up.genes = function(locs) {
-
   topleft = locs$tend[1]
   row = 1
   for(i in 1:nrow(locs)) {
@@ -90,13 +75,9 @@ line.up.genes = function(locs) {
     i = i + 1
   } # for(i)
   locs$row[nrow(locs)] = row
-
   return(locs)
 } # line.up.genes
-
-
 resolve.collisions = function(locs) {
-
   # Look for collisions and move the gene down until it doesn't collide.
   for(i in 1:nrow(locs)) {
     # Get all of the genes in this row.
@@ -107,7 +88,7 @@ resolve.collisions = function(locs) {
       # Go through each overlapping gene and move it down one row until it
       # doesn't collide with any genes.
       for(j in overlap) {
-        done = F
+        done = FALSE
         while(!done) {
           locs$row[j] = locs$row[j] + 1
           rowgenes = which(locs$row == locs$row[j])
@@ -116,29 +97,28 @@ resolve.collisions = function(locs) {
           rng = rng[!is.na(rng)]
           if(length(rng) == 0) {
             # This occurs when we have gone past the maximum number of rows.
-            done = T
+            done = TRUE
           } else if(length(rng) == 1) {
             # This occurs when the gene being moved is at the beginning or 
             # end of the plot.
             if(rng <= curr.gene) {
               if(locs$gstart[j] > locs$tend[rng]) {
-                 done = T
+                 done = TRUE
               } #
             } else {
               if(locs$tend[j] < locs$gstart[rng]) {
-                 done = T
+                 done = TRUE
               } #            
             } # else
           } else if(length(rng) == 2) {
             if(locs$gstart[j] > locs$tend[rng[1]] & 
                locs$tend[j] < locs$gstart[rng[2]]) {
-               done = T
+               done = TRUE
             } #
           } # else
         } # while(!done)
       } # for(j)
     } # if(length(overlap) > 0)
   } # for(i)
-
   return(locs)
 } # resolve.collisions()

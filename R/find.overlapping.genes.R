@@ -7,25 +7,19 @@
 find.overlapping.genes = function(variants,
    mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.20130305.sorted.txt.gz",
    type = c("gene", "exon")) {
-
   gene.type = match.arg(type)
   if(gene.type == "exon") {
     stop("'exon' is not yet implemented.")
   } # if(gene.type == "exon")
-
   var.type = attr(variants, "type")
-
   retval = NULL
   if(!is.null(variants)) {
-
     chr = unique(variants$CHROM)
-
     if(var.type %in% c("snp", "indel")) {
       rng = range(variants$POS)
     } else if(var.type == "sv") {
       rng = range(c(variants$START, variants$END))
     } # else if(var.type == "sv")
-
     mgi = get.mgi.features(file = mgi.file, chr = chr, start = rng[1], 
                            end = rng[2], source = "MGI", type = type)
     m = convert.genes.to.GRanges(mgi)
@@ -33,9 +27,6 @@ find.overlapping.genes = function(variants,
     mtch = findOverlaps(s, m)
     
     retval = mgi[unique(subjectHits(mtch)),]
-
   } # if(is.null(variants))
-
   retval
 } # find.overlapping.genes()
-

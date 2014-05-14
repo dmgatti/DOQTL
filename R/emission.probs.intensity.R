@@ -7,7 +7,6 @@
 #            r.t.covars:
 ################################################################################
 emission.probs.intensity = function(data, params) {
-
   # Create a large vector to pass down to C.
   retval = array(0, c(dim(params$r.t.means)[1], nrow(data$theta),
                  dim(params$r.t.means)[3]), dimnames = 
@@ -20,7 +19,7 @@ emission.probs.intensity = function(data, params) {
   rho = data$rho
   rho[is.na(data$rho)] = -100.0
   
-  res = .C(emission_prob_from_r,
+  res = .C(C_emission_prob,
            dims = as.integer(dim(retval)),
            theta = as.double(theta),
            rho   = as.double(rho),
@@ -29,14 +28,10 @@ emission.probs.intensity = function(data, params) {
            thetavars = as.double(params$r.t.covars[,1,]),
            rhovars   = as.double(params$r.t.covars[,2,]),
            prob = as.double(retval))
-
   # Create the 3D array of emission probabilities.
   retval = array(res$prob, c(dim(params$r.t.means)[1], nrow(data$theta),
            dim(params$r.t.means)[3]), dimnames = 
            list(dimnames(params$r.t.means)[[1]], rownames(data$theta),
            dimnames(params$r.t.means)[[3]]))
-
   return(retval)
-
 } # emission.probs.intensity()
-

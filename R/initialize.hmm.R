@@ -1,16 +1,14 @@
 ################################################################################
-# Initialize the prfilt and prsmthooth matrices.
+# Initialize the prfilt and prsmooth matrices.
 # Arguments: snps: Vector of SNP IDs.
 #            samples: Vector of sample IDs.
 #            states: Vector of HMM states.
 #            b: the log probability emission matrix.
 # Returns the initial values for the CC or DO.
 initialize.hmm = function(snps, samples, states) {
-
   prsmth = array(-.Machine$double.xmax, c(length(states), length(samples),
                  length(snps)), dimnames = list(states, samples, snps))
   init = rep(0, length(states))
-
   if(all(nchar(states) == 1)) {
     spl = matrix(unlist(strsplit(states, split = "")), nrow = 1)
     founders = sort(unique(as.vector(spl)))
@@ -31,9 +29,6 @@ initialize.hmm = function(snps, samples, states) {
       init[het]  = log(2.0 / length(founders)^2) # 1/32 for DO
     } # else
   } # else
-
   names(init) = states
   return(list(prsmth = prsmth, init = init))
-
 } # initialize.hmm()
-

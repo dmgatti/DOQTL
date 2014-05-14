@@ -13,9 +13,9 @@
  *  double* rvars: 2D matrix of rho variances. num states * num SNPs.
  *  double* prsmth: 3D matrix of smoothed log-probabilities. num states *
  *                  num samples * num SNPs.
- *  double* foundertmeans: 2D matrix of founder x mean intensities.
+ *  double* foundertmeans: 2D matrix of founder theta mean intensities.
  *                         num_states * num_snps.
- *  double* founderrmeans: 2D matrix of founder y mean intensities.
+ *  double* founderrmeans: 2D matrix of founder rho mean intensities.
  *                         num_states * num_snps.
  * R passes a pointer down for arrays.  We have to index into the 3D arrays by
  * hand.  SNPs are in the first slice.  Each slice has states in rows and 
@@ -26,9 +26,9 @@
  */
 #include <R_ext/Print.h>
 #include <R_ext/Utils.h>
-#include "addlog.h"
+#include <math.h>
 
-void update_from_r(int* dims, double* t, double* r, double* tmeans, 
+void update_intensity(int* dims, double* t, double* r, double* tmeans, 
                    double* rmeans, double* tvars, double* rvars,
                    double* prsmth, double* foundertmeans, double* founderrmeans) {
   int snp = 0; /* index for SNPs */
@@ -39,7 +39,7 @@ void update_from_r(int* dims, double* t, double* r, double* tmeans,
   int num_snps    = dims[2]; /* Total number of SNPs in prsmth. */
   int snp_index = 0;    /* SNP index for mean and covar arrays. */
   int state_index = 0;  /* State index for mean and covar arrays. */
-  int t_snp_index = 0;    /* Index into theta & rho arrays. */
+  int t_snp_index = 0;  /* Index into theta & rho arrays. */
   int t_index = 0;      /* Index into theta & rho arrays. */
   double t_diff = 0.0;  /* Difference between theta & theta mean. */
   double r_diff = 0.0;  /* Difference between rho & rho mean. */
@@ -57,8 +57,8 @@ void update_from_r(int* dims, double* t, double* r, double* tmeans,
   for(snp = 0; snp < num_snps; snp++) {
     if(snp % 100 == 0) R_CheckUserInterrupt();
 
-    /* Update the state means. */
-	/* snp_index moves us to the current SNP in the mean arrays. */
+    /* Update the state means. 
+	 * snp_index moves us to the current SNP in the mean arrays. */
 	snp_index   = snp * num_states;
 	t_snp_index = snp * num_samples;
 	prsmth_snp_index = snp * prsmth_slice;
@@ -79,7 +79,7 @@ void update_from_r(int* dims, double* t, double* r, double* tmeans,
         /* t_index moves us to the current sample in the theta & rho matrices. */
 	    t_index = sam + t_snp_index;
 		/* Only use this data point if it is > 0.0. Negative values are missing data. */
-		if((t[t_index] > 0.0) & (r[t_index] > 0.0)) {
+		if((t[t_index] >= 0.0) & (r[t_index] >= 0.0)) {
           exp_prsmth[sam] = exp(prsmth[st + sam * num_states + prsmth_snp_index]);
 	      /* Update the theta & rho means. */
           tmeans[state_index] += t[t_index] * exp_prsmth[sam];
@@ -110,7 +110,7 @@ void update_from_r(int* dims, double* t, double* r, double* tmeans,
         /* t_index moves us to the current sample in the theta & rho matrices. */
 	    t_index = sam + t_snp_index;
 		/* Only use this data point if it is > 0.0. Negative values are missing data. */
-		if((t[t_index] > 0.0) & (r[t_index] > 0.0)) {	  	
+		if((t[t_index] >= 0.0) & (r[t_index] >= 0.0)) {	  	
   		  t_diff = t[t_index] - tmeans[state_index];
   		  tvars[state_index]  += t_diff * t_diff * exp_prsmth[sam];
 
@@ -129,4 +129,4 @@ void update_from_r(int* dims, double* t, double* r, double* tmeans,
 
     } /* for(st) */
   } /* for(snp) */
-} /* update_from_r() */
+} /* update_intensity() */

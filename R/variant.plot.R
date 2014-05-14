@@ -5,13 +5,10 @@
 #                  the remaining columns. Variants in rows.
 #            col: character vector, with three colors for missing, ALT and REF
 #                 alleles.
-snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T, 
+snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = TRUE, 
            ref, highlight, pattern.snps, mgi, qtl) {
-
-  old.par = par(no.readonly = T)
-
+  old.par = par(no.readonly = TRUE)
   type = attr(variants, "type")
-
   # Verify that the reference strain is in the list of strains that we have.
   if(!missing(ref)) {
     if(!ref %in% colnames(variants)) {
@@ -19,67 +16,56 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
            ") is not in the colnames of variants."), sep = "")
     } # if(!ref %in% colnames(variants))
   } # if(!missing(ref))
-
   # If there are quality values, strip them out.
   variants = strip.quality.columns(variants)
-
   # Cluster the strains, if needed.
   if(cluster) {    
     variants = cluster.strains(variants)
   } # if(cluster)
-
   # Separate the header from the variants.
   hdr = variants[,1:5]
   variants = as.matrix(variants[,-1:-5])
-
   # If we have a reference strain, change the matrix to reflect this.
   if(!missing(ref)) {
     variants = matrix(as.numeric(variants != variants[,ref]), nrow(variants),
                ncol(variants), dimnames = dimnames(variants))
   } # if(!missing(ref))
-
   # Convert variant positions to Mb, if needed.
   if(type == "snp" | type == "indel") {
-    if(max(hdr$POS, na.rm = T) > 200) {
+    if(max(hdr$POS, na.rm = TRUE) > 200) {
       hdr$POS = hdr$POS * 1e-6
     } # if(max(hdr$POS) > 200)
   } else if(type == "sv") {
-    if(max(hdr$START, na.rm = T) > 200) {
+    if(max(hdr$START, na.rm = TRUE) > 200) {
       hdr$START = hdr$START * 1e-6
     } # if(max(hdr$START) > 200)
-
-    if(max(hdr$END, na.rm = T) > 200) {
+    if(max(hdr$END, na.rm = TRUE) > 200) {
       hdr$END = hdr$END * 1e-6
     } # if(max(hdr$END) > 200)
   } # else if(type == "sv")
-
   # If we have a QTL data.frame, convert the positions to Mb, if needed.
   if(!missing(qtl)) {
     if(ncol(qtl) != 3) {
       stop(paste("The QTL data.frame must contain three columns with chr,",
            "position and score."))
     } # if(ncol(qtl) != 3)
-
-    if(max(qtl[,2], na.rm = T)> 200) {
+    if(max(qtl[,2], na.rm = TRUE)> 200) {
       qtl[,2] = qtl[,2] * 1e-6
     } # if(max(qtl[,2])> 200)
   } # if(!missing(qtl))
-
   # Flip the SNPs so that they plot with the first column at the top.
   variants = variants[,ncol(variants):1]
-
   # Make NA = -1 for plotting.
   variants[is.na(variants)] = -1
-
   # If we have pattern SNPs and genes, then look for their intersection
   # and recored which genes to color orange.
   genes.to.mark = NULL
   if(!missing(pattern.snps) && !missing(mgi)) {
     # Create an MGI GenomicRanges object.
-    genes.to.mark = rep(F, nrow(mgi))
+    genes.to.mark = rep(FALSE, nrow(mgi))
     mgi.gr = GRanges(seqnames = mgi$seqid, ranges = 
              IRanges(start = mgi$start, end = mgi$stop), mcol = 
-             data.frame(ID = mgi$ID, Name = mgi$Name, stringsAsFactors = F))
+             data.frame(ID = mgi$ID, Name = mgi$Name, stringsAsFactors = FALSE))
     
     if(type =="snp" | type == "indel") {
       # Note the SNP/Indel postions must be in bp coordinates for the GRanges obejct.      
@@ -87,7 +73,7 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
                IRanges(start = pattern.snps$POS, end = pattern.snps$POS),
                mcols = data.frame(pattern.snps[,-1:-5]))
       
-      if(max(pattern.snps$POS, na.rm = T) > 200) {
+      if(max(pattern.snps$POS, na.rm = TRUE) > 200) {
         pattern.snps$POS = pattern.snps$POS * 1e-6
       } # if(max(pattern.snps$POS) > 200)      
     } else {
@@ -96,18 +82,17 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
                IRanges(start = pattern.snps$START, end = pattern.snps$END),
                mcols = data.frame(pattern.snps[,-1:-5]))
       
-      if(max(pattern.snps$START, na.rm = T) > 200) {
+      if(max(pattern.snps$START, na.rm = TRUE) > 200) {
         pattern.snps$START = pattern.snps$START * 1e-6
       } # if(max(pattern.snps$START) > 200)
       
-      if(max(pattern.snps$END, na.rm = T) > 200) {
+      if(max(pattern.snps$END, na.rm = TRUE) > 200) {
         pattern.snps$END = pattern.snps$END * 1e-6
       } # if(max(pattern.snps$END) > 200)
     } # else
     ol = subsetByOverlaps(mgi.gr, var.gr)
     genes.to.mark = mcols(ol)$mcol.Name
   } # if(!missing(pattern.snps) && !missing(mgi))
-
   # Plot the SNPs.
   # Make a two panel plot if MGI genes are provided.
   rplt = 0.15
@@ -147,16 +132,14 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
       } # else
     } # else
   } # else 
-
   x = NULL
   if(type == "snp" | type == "indel") {
     x = hdr$POS
   } else if(type == "sv") {
     x = hdr$START
   } #  else if(type == "sv")
-
   image(x, 1:ncol(variants), variants, breaks = c(-1.5, -0.5, 0.5, 1.5),
-        col = col, ann = F, axes = F)
+        col = col, ann = FALSE, axes = FALSE)
   par(las = 1)
   saved.xlim = par("usr")[1:2]
   mtext(text = paste("Chr", hdr[1, grep("CHR", colnames(hdr))], "(Mb)"), 
@@ -166,12 +149,10 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
 #  abline(v = axis(3, padj = 0.4), lty = 2)
   axis(3, padj = 0.4)
   usr = par("usr")
-
   # Plot the strain names.
   par(las = 2)
   mtext(text = colnames(variants), side = 2, line = 0.2, at = 1:ncol(variants))
   rect(usr[1], usr[3], usr[2], usr[4], lwd = 2)
-
   # If the user has given strains to highlight, draw a transparent green
   # box over them.
   if(!missing(highlight)) {
@@ -180,13 +161,11 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
       stop(paste("All of the highlight strains are not in the SNP matrix.",
            paste(highlight[is.na(hcols)], collapse = ",")))
     } # if(any(is.na(hcols)))
-
     for(i in 1:length(hcols)) {
       rect(usr[1], hcols[i] - 0.5, usr[2], hcols[i] + 0.5,
            col = rgb(1, 0, 0, 0.1))
     } # for(i)
   } # if(!missing(highlight))
-
   # If the user provided pattern SNPs, plot them below the SNP tile plot.
   if(!missing(pattern.snps)) {
     par(xpd = NA)
@@ -203,7 +182,6 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
         pattern.snps$END = pattern.snps$END * 1e-6
       } # if(max(pattern.snps$END) > 200)
     } # else
-
     coord = par(c("usr", "fin", "plt"))
     ex = (coord$usr[4] - coord$usr[3]) / (coord$plt[4] - coord$plt[3])
     top = coord$usr[3]
@@ -219,9 +197,8 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
     lines(as.vector(x), as.vector(y), col = rgb(1, 0.6, 0))
     par(xpd = NA)
     text(coord$usr[1], (top + bottom) * 0.5, "SNP Pattern ", adj = 1)
-    par(xpd = F)
+    par(xpd = FALSE)
   } # if(!missing(pattern.snps))
-
   # If the user has given us QTL values, plot them below the SNPs.
   if(!missing(qtl)) {
     if(type == "snp" | type == "indel") {
@@ -233,16 +210,14 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
                   qtl[,2] <= hdr$END[nrow(hdr)] + 3,]
       xout = seq(hdr$START[1], hdr$START[nrow(hdr)], length.out = 1000)
     } # else
-
     val = approx(qtl[,2], qtl[,3], xout = xout)
-    val$y[is.na(val$y)] = min(val$y, na.rm = T)
+    val$y[is.na(val$y)] = min(val$y, na.rm = TRUE)
     br = quantile(val$y, 0:100/100)
     cl = colorRampPalette(c(rgb(0,0,0), rgb(1,0,0)))(length(br) - 1)
     par(plt = c(rplt, lplt, 0.1, 0.9))
     image(1:length(val$x), 1, as.matrix(val$y), breaks = br, col = cl,
-          ann = F, axes = F)
+          ann = FALSE, axes = FALSE)
     mtext(text = "QTL", side = 2, line = 0.2)
-
     # Plot the SNP locations where mapping occured.
 #    par(xpd = NA)
 #    coord = par(c("usr", "fin", "plt"))
@@ -255,9 +230,8 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
 #    y = rbind(rep(bottom, ncol(x)), rep(top, ncol(x)), rep(NA, ncol(x)))
 #    lines(as.vector(x), as.vector(y), lwd = 3, lend = 2)
 #    text(coord$usr[1], (top + bottom) * 0.5, "Mapped ", adj = 1)
-#    par(xpd = F)
+#    par(xpd = FALSE)
   } # if(!missing(qtl))
-
   # Draw MGI features, if requested (by including mgi).
   if(!missing(mgi) && nrow(mgi) > 0) {
     gene.cols = rep(rgb(0.4, 0.4, 0.9), nrow(mgi))
@@ -269,11 +243,8 @@ snp.plot = function(variants, col = c("black", "grey50", "white"), cluster = T,
 # , cex.lab = 1.5, cex.axis = 1.5
     gene.plot(mgi, col = gene.cols, xlim = saved.xlim, xaxs = "i")
   } # if(!missing(mgi))
-
   par(old.par)
 } # snp.plot()
-
-
 ################################################################################
 # High level function to allow plotting of variant alleles, genes, variant pattern
 # and QTL in one command.
@@ -298,45 +269,37 @@ variant.plot = function(var.file = "ftp://ftp.jax.org/SNPtools/variants/cc.snps.
                "NZO/HlLtJ", "PWK/PhJ", "WSB/EiJ"), ref = "C57BL/6J", pattern, qtl)
 {
   print("Checking arguments...")
-
   if(missing(chr)) {
     stop(paste("The chr argument is NULL. Please enter the chromosome and",
          "start and end locations that you would like to plot."))
   } # if(missing(chr))
-
   if(missing(start)) {
     stop(paste("The start argument is NULL. Please enter the chromosome and",
          "start and end locations that you would like to plot."))
   } # if(missing(start))
-
   if(missing(end)) {
     stop(paste("The end argument is NULL. Please enter the chromosome and",
          "start and end locations that you would like to plot."))
   } # if(missing(end))
-
   if(!missing(ref)) {
     if(!ref %in% strains) {
       stop(paste("The refrence strain (", ref, ")is not in the strains.",
       "Please select a reference strain from the strains you are plotting."))
     } # if(!ref %in% strains)
   } # if(!missing(ref))
-
   if(!missing(qtl)) {
     if(ncol(qtl) != 3) {
       stop(paste("The QTL data.frame must contain three columns with chr,",
            "position and mapping statistic, in that order."))
     } # if(ncol(qtl) != 3)
   } # if(!missing(qtl))
-
   type = match.arg(type)
-
   print("Retrieving Variants...")
   variants = get.variants(file = var.file, chr = chr, start = start, 
-         end = end, type = type, strains = strains, polymorphic = F)
+         end = end, type = type, strains = strains, polymorphic = FALSE)
   print(paste(nrow(variants), "Variants in region."))
   nvariants = convert.variants.to.numeric(variants)
   rm(variants)
-
   cat.variants = NULL
   if(!missing(pattern)) {
     print("Getting SNPs that match the pattern...")
@@ -352,19 +315,14 @@ variant.plot = function(var.file = "ftp://ftp.jax.org/SNPtools/variants/cc.snps.
      print("No variants match the pattern.")
     } # else
   } # if(!missing(pattern))
-
   print("Getting genes in region...")
   mgi = get.mgi.features(mgi.file, chr = chr, start = start, end = end,
                        source = "MGI", type = "gene")
   print(paste(nrow(mgi), "genes in region."))
-
   print("Drawing plot...")
   snp.plot(variants = nvariants, ref = ref, pattern.snps = pattern.snps, 
            mgi = mgi, qtl = qtl)
-
   if(!missing(cat.variants)) {
     return(cat.variants)
   } # if(!missing(cat.variants))
-
 } # variant.plot()
-

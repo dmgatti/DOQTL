@@ -24,7 +24,7 @@
 #include <R_ext/Utils.h>
 #include "addlog.h"
 
-void update_alleles_from_r(int* dims,int* geno, double* b, double* pseudo, 
+void update_alleles(int* dims,int* geno, double* b, double* pseudo, 
                            double* prsmth) {
   int snp = 0; /* index for SNPs */
   int sam = 0; /* index for samples */
@@ -89,5 +89,5 @@ void update_alleles_from_r(int* dims,int* geno, double* b, double* pseudo,
 
       } /* for(st) */
    } /* for(snp) */
-} /* update_alleles_from_r() */
+} /* update_alleles() */
 

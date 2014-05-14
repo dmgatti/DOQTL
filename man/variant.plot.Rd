@@ -2,14 +2,13 @@
 \alias{variant.plot}
 \title{variant.plot}
 \description{
-  Convenience function that makes a tile plot the given SNPs with the major allele colored dark and the minor allele light.  Optionally, add SNPs that match a certain pattern and genes and a QTL score. This calls \code{\link{snp.plot}} after gathering all of the data.
+  Convenience function that makes a tile plot the given SNPs with the major allele colored dark and the minor allele light.  Optionally, add SNPs that match a certain pattern and genes and a QTL score. This calls \code{\link{sdp.plot}} after gathering all of the data.
 }
 \usage{
-  variant.plot(
-  var.file = "http://cgd.jax.org/tools/SNPtools/Build38/sanger.snps.NCBI38.txt.gz",
-  mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.20130305.sorted.txt.gz",
-  chr, start, end, type = c("snp", "indel", "sv"), strains = c("A/J", "C57BL/6J", 
-  "129S1/SvImJ", "CAST/EiJ", "NOD/ShiLtJ", "NZO/HlLtJ", "PWK/PhJ", "WSB/EiJ"),
+  variant.plot(var.file = "ftp://ftp.jax.org/SNPtools/variants/cc.snps.NCBI38.txt.gz", 
+  mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz", chr, 
+  start, end, type = c("snp", "indel", "sv"), strains = c("A/J", "C57BL/6J", 
+  "129S1/SvImJ", "CAST/EiJ", "NOD/ShiLtJ", "NZO/HlLtJ", "PWK/PhJ", "WSB/EiJ"), 
   ref = "C57BL/6J", pattern, qtl)
 }
 \arguments{

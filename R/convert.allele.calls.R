@@ -9,18 +9,15 @@
 # April 8, 2013
 ################################################################################
 convert.allele.calls = function(geno) {
-
   # Get the number of alleles at each SNP.
   tbl = apply(geno, 2, unique)
   tbl = lapply(tbl, function(a) { a[a != "H" & a != "N"] })
   tbl = lapply(tbl, sort)
-
   t2 = unlist(lapply(tbl, paste, collapse = ""))
   t3 = table(t2)
  
   # Create a number genotype matrix.
   g2 = matrix(0, nrow(geno), ncol(geno), dimnames = dimnames(geno))
-
   # Replace SNPs with a single homozygote with 0.
   t3 = t3[names(t3) != ""]
   single = which(nchar(names(t3)) == 1)
@@ -28,7 +25,6 @@ convert.allele.calls = function(geno) {
     rng = which(t2 == names(t3)[i])
     g2[,rng][geno[,rng] == names(t3)[i]] = 0
   } # for(i)
-
   two = which(nchar(names(t3)) == 2)
   for(i in two) {
     rng = which(t2 == names(t3)[i])
@@ -36,12 +32,8 @@ convert.allele.calls = function(geno) {
     g2[,rng][geno[,rng] == alleles[1]] = 0
     g2[,rng][geno[,rng] == alleles[2]] = 2
   } # for(i)
-
   # Replace hets and no calls.
   g2[geno == "H"] = 1
   g2[geno == "N"] = 3
-
   return(g2)
-
 } # convert.allele.calls()
-

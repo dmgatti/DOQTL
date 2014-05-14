@@ -1,6 +1,5 @@
 #############################################################################
 # Get the mouse chromosome lengths.
-library(org.Mm.eg.db)
 get.chr.lengths = function() {
   # Get the chromosome lengths.
   chrlen = org.Mm.egCHRLENGTHS
@@ -15,4 +14,3 @@ get.chr.lengths = function() {
   chrlen = chrlen * 1e-6
   return(chrlen)
 } # get.chr.lengths()
-

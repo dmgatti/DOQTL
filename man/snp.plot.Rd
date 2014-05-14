@@ -5,7 +5,7 @@
   Lower level function that makes a tile plot the given SNPs with the major allele colored dark and the minor allele light.  Optionally, add SNPs that match a certain pattern and genes and a QTL score.
 }
 \usage{
-  snp.plot(variants, col = c("black", "grey50", "white"), cluster = T, ref, highlight, 
+  snp.plot(variants, col = c("black", "grey50", "white"), cluster = TRUE, ref, highlight, 
   pattern.snps, mgi, qtl)
 }
 \arguments{

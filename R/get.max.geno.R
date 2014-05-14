@@ -18,6 +18,5 @@ get.max.geno = function(probs) {
     let = apply(let, 2, sort)
     max.geno[s,het] = paste(let[1,], let[2,], sep = "")
   } # for(s)
-
   return(max.geno)
 } # get.max.geno()

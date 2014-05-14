@@ -19,7 +19,7 @@
 #include <string.h>
 #include "addlog.h" 
 
-void kinship_from_r(int* dims, double* probs, double* K) {
+void kinship(int* dims, double* probs, double* K) {
 
   int snp = 0; /* index for SNPs */
   int sam1 = 0; /* index for samples */
@@ -92,4 +92,6 @@ void kinship_from_r(int* dims, double* probs, double* K) {
 
   free(mags);
   
-} /* kinship_from_r() */
+} /* kinship() */
+
+

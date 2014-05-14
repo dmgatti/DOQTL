@@ -7,7 +7,6 @@
 \usage{
   convert.variants.to.GRanges(variants)
 }
-
 \arguments{
   \item{variants}{
      Data frame with four header columns and SNPs in the remaining columns.
@@ -26,4 +25,3 @@ Daniel Gatti
   data(example.snps)
   gr = convert.variants.to.GRanges(example.snps[1:100,])
 }
-

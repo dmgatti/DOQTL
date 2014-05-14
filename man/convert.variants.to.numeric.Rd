@@ -7,7 +7,6 @@ Given a matrix or data frame with character {ACGT} SNP values, convert them to n
 \usage{
 convert.variants.to.numeric(variants)
 }
-
 \arguments{
   \item{variants}{
      Data frame with four header columns. The SNPs must be in {ACGT} format in columns 5 through ncol(snps).
@@ -26,4 +25,3 @@ Daniel Gatti
   data(example.snps)
   numeric.snps = convert.variants.to.numeric(example.snps[1:100,])
 }
-

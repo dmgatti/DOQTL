@@ -4,14 +4,11 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
   if(missing(variants) || nrow(variants) == 0) {
     return(NULL)
   } # if(missing(variants) || nrow(variants) == 0)
-
   type = attr(variants, "type")
-
   hdr = variants[,1:5]
   chr = hdr$CHR[1]
   start = 0
   end = 0
-
   if(type %in% c("snp", "indel")) {
     start = min(hdr$POS)
     end   = max(hdr$POS)
@@ -19,14 +16,12 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
     start = min(hdr$START)
     end   = max(hdr$END)
   } # else if(type == "sv")
-
   mgi = get.mgi.features(mgi.file, chr = chr, start = start, 
         end = end, source = "all", type = c("transcript", "mRNA", 
         "gene", "exon", "three_prime_UTR", "five_prime_UTR"))
   output = cbind(hdr, symbol = rep(NA, nrow(hdr)), id = rep(NA, 
            nrow(hdr)), type = rep(NA, nrow(hdr)))
   output$type = "intergenic"
-
   # First classify SNPs in genes.
   gene.rows = which(mgi$type == "gene")
 #  This consumed too much memory.
@@ -35,7 +30,6 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
 #  colnames(inter) = gene.rows
 #  inter = apply(inter, 2, which)
 #  inter = inter[sapply(inter, length) > 0]
-
   if(type %in% c("snp", "indel")) {
     for(i in gene.rows) {
       inter = which(hdr$POS >= mgi$start[i] & hdr$POS <= mgi$stop[i])
@@ -57,7 +51,6 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
       } # if(length(inter) > 0)
     } # for(i)
   } # else if(type == "sv")
-
   # Exons.
   exon.rows = which(mgi$type == "exon")
   if(type %in% c("snp", "indel")) {
@@ -75,7 +68,6 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
       } # if(length(inter) > 0)
     } # for(i)
   } # else if(type == "sv")
-
   # 3' UTR
   utr.rows = which(mgi$type == "three_prime_UTR")
   if(type %in% c("snp", "indel")) {
@@ -93,7 +85,6 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
       } # if(length(inter) > 0)
     } # for(i)
   } # else if(type == "sv")
-
   # 5' UTR
   utr.rows = which(mgi$type == "five_prime_UTR")
   if(type %in% c("snp", "indel")) {
@@ -111,11 +102,8 @@ function (variants, mgi.file = "http://cgd.jax.org/tools/SNPtools/MGI/MGI.201303
       } # if(length(inter) > 0)
     } # for(i)
   } # else if(type == "sv")
-
   return(output)
 } # categorize.variants()
-
-
 get.gene.name = function(value, mgi) {
   first3 = substr(value, 1, 3)
   name = NA
@@ -129,6 +117,5 @@ get.gene.name = function(value, mgi) {
       name = value
     } # else
   } # else
-
   return(name)
 } # get.gene.name()

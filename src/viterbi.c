@@ -24,7 +24,7 @@
 #include <string.h>
 #include "addlog.h"
 
-void viterbi_from_r(int* dims, double* a, double* b, int* v_path, double* v_prob) {
+void viterbi(int* dims, double* a, double* b, int* v_path, double* v_prob) {
   int snp = 0; /* index for SNPs */
   int sam = 0; /* index for samples */
   int st1 = 0; /* index for states */
@@ -146,5 +146,5 @@ void viterbi_from_r(int* dims, double* a, double* b, int* v_path, double* v_prob
   free(pr);
   free(ptr);
 
-} /* viterbi_from_r() */
+} /* viterbi() */
 

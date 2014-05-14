@@ -19,7 +19,7 @@ Numeric 3D array, with samples in dim[1], states = dim[2] and SNPs in dim[3].  T
   Daniel Gatti
 }
 \seealso{
-  \code{\link{scanone}}, \code{\link{scanone.perms}}
+  \code{\link{scanone}}, \code{\link{scanone.perm}}
 }
 \examples{
   \dontrun{
@@ -28,4 +28,3 @@ Numeric 3D array, with samples in dim[1], states = dim[2] and SNPs in dim[3].  T
 }
 \keyword{ QTL }
 \keyword{ genotypes }
-

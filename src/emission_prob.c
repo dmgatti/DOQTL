@@ -25,7 +25,7 @@
 #include <R_ext/Utils.h> 
 #include "addlog.h"
 
-void emission_prob_from_r(int* dims, double* theta, double* rho, double* thetameans,
+void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
                    double* rhomeans, double* thetavars, double* rhovars, double* probs) {
   int snp = 0; /* index for SNPs */
   int sam = 0; /* index for samples */
@@ -74,7 +74,7 @@ void emission_prob_from_r(int* dims, double* theta, double* rho, double* thetame
       theta_index = sam + theta_snp_index;
 
 	  /* Set the intensity < 0.0 to indicate missing data. */
-	  if((theta[theta_index] > 0.0) && (rho[theta_index] > 0.0)) {
+	  if((theta[theta_index] >= 0.0) && (rho[theta_index] >= 0.0)) {
 
         /* Calculate the emission probabilities for each state. */
         for(st = 0; st < num_states; st++) {
@@ -114,4 +114,4 @@ void emission_prob_from_r(int* dims, double* theta, double* rho, double* thetame
     } /* for(sam) */      
 
   } /* for(snp) */  
-} /* emission_prob_from_r() */
+} /* emission_prob() */

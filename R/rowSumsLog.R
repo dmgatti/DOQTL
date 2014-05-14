@@ -10,6 +10,6 @@ rowSumsLog = function(logmat) {
   logmat[max.index] = NA
   logmat = logmat - retval
   logmat[logmat < get.machine.precision()] = NA
-  retval = retval + log1p(rowSums(exp(logmat), na.rm = T))
+  retval = retval + log1p(rowSums(exp(logmat), na.rm = TRUE))
   return(retval)
 } # rowSumsLog

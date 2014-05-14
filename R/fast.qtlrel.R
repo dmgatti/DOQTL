@@ -11,15 +11,12 @@
 # Arguments: pheno: numeric vector with no NAs containing the phenotype.
 #            probs:
 fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
-
   # If the SNPs are in bp, rescale them to Mb.
-  if(max(snps[,3], na.rm = T) > 200) {
+  if(max(snps[,3], na.rm = TRUE) > 200) {
     snps[,3] = snps[,3] * 1e-6
   } # if(max(snps[,3]) < 200)
-
   # Return value.
   retval = NULL
-
   prdat = list(pr = probs, chr = snps[,2], dist = snps[,3], snp = snps[,1])
   class(prdat) = c(class(prdat), "addEff")
   err.cov = diag(length(pheno))
@@ -27,7 +24,12 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     K = as.matrix(K)
     vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
                 EE = err.cov)
-    vc = estVC(y = pheno, x = addcovar, v = vTmp)
+    vc = NULL
+    if(missing(addcovar)) {
+      vc = estVC(y = pheno, v = vTmp)
+    } else {
+      vc = estVC(y = pheno, x = addcovar, v = vTmp)
+    } # else
     err.cov = matrix(0, nrow(K), ncol(K))
     num.cov = 1
     if(!missing(addcovar)) {
@@ -38,9 +40,8 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     } # for(j)
     rm(vTmp)
   } # if(!missing(K))
-
   # Invert the covariance matrix.
-  eW = eigen(err.cov, symmetric = T)
+  eW = eigen(err.cov, symmetric = TRUE)
   if (min(eW$values) < 0 && abs(min(eW$values)) > sqrt(.Machine$double.eps)) {
     stop("'W' is not positive definite")
   } else {
@@ -48,7 +49,6 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
   } # else
   err.cov = diag(eW$values^-0.5) %*% t(eW$vector)
   rm(eW)
-
   # Add the intercept.
   if(missing(addcovar)) {
     addcovar = matrix(1, nrow = length(pheno), ncol = 1)
@@ -56,13 +56,11 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     addcovar = as.matrix(cbind(rep(1, length(pheno)), addcovar))
   } # else
   colnames(addcovar)[1] = "Intercept"
-
   # Null model.
   ytmp = err.cov %*% pheno
   xtmp = err.cov %*% addcovar
   qr.null = qr(xtmp)
   ss.null = sum(qr.resid(qr.null, ytmp)^2)
-
   # Additive model for all SNPs.
   addx = cbind(addcovar, probs[,-1,1])
   ss = rep(0, nrow(snps))
@@ -76,13 +74,12 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     ss[s] = sum(qr.resid(qr.add, ytmp)^2)
     coef[s,] = qr.coef(qr.add, ytmp)
   } # for(s)
-
-  perc.var = 1.0 - (ss / ss.null)
+  perc.var = 100 * (1.0 - (ss / ss.null))
   lrs = -length(pheno) * log(ss / ss.null)
   lod = lrs / (2 * log(10))
-
-  return(list(lod = cbind(snps[,1:4], perc.var, lrs, lod),
-         coef = coef))
-
+  # Get the p-value from the LRS.
+  p = pchisq(q = -length(pheno) * log(ss / ss.null), 
+      df = ncol(addx) - ncol(addcovar), lower.tail = FALSE)
+  return(list(lod = cbind(snps[,1:4], perc.var  = perc.var, lrs = lrs, 
+         lod = lod, p = p, neg.log10.p = -log(p, 10)), coef = coef))
 } # fast.qtlrel()
-

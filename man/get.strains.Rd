@@ -26,5 +26,3 @@
   snps = get.variants(chr = 7, start = 103, end = 105, strains = strains)
   }
 }
-
-

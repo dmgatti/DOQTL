@@ -5,7 +5,6 @@
 # 
 write.results = function(prsmth, theta.rho.means, theta.rho.covars, b, output.dir,
                          chr, all.chr, sex) {
-
   if(!missing(prsmth)) {
     dimnames(prsmth)[[2]] = make.names(dimnames(prsmth)[[2]])
     for(i in 1:dim(prsmth)[2]) {
@@ -14,7 +13,6 @@ write.results = function(prsmth, theta.rho.means, theta.rho.covars, b, output.di
                    sep = "\t", col.names = chr == all.chr[1]) 
     } # for(i)
   } # if(!missing(prsmth))
-
   # Write out the genotype mean and variance estimates.
   if(!missing(theta.rho.means)) {  
     if(chr != "X") {
@@ -63,4 +61,3 @@ write.results = function(prsmth, theta.rho.means, theta.rho.covars, b, output.di
   } # else if(!missing(b))
   
 } # write.results()
-

@@ -15,11 +15,10 @@
   }
 }
 \value{
-  For SNPs and Indels:
-  data.frame: with eight columns: ID, CHR, POS, REF, ALT, symbol, id, type.  The first four columns are simply copied over from the SNP file.  The symbol column contains the Gene Symbol.  The id column contains a gene ID (MGI, Ensembl, NCBI or VEGA).  The type column contains "intergenic", "3UTR", "exon", "intron" or "5UTR", depending on the location of the variant in a gene.
-
-  For SVs:
-  data.frame: with eight columns: ID, CHR, POS, REF, ALT, symbol, id, type.  The first four columns are simply copied over from the SNP file.  The symbol column contains the Gene Symbol.  The id column contains a gene ID (MGI, Ensembl, NCBI or VEGA).  The type column contains "intergenic", "3UTR", "exon", "intron" or "5UTR", depending on the location of the variant in a gene.
+  FALSEor SNPs and Indels:
+  data.frame: with eight columns: ID, CHR, POS, REFALSE, ALT, symbol, id, type.  The first four columns are simply copied over from the SNP file.  The symbol column contains the Gene Symbol.  The id column contains a gene ID (MGI, Ensembl, NCBI or VEGA).  The type column contains "intergenic", "3UTR", "exon", "intron" or "5UTR", depending on the location of the variant in a gene.
+  FALSEor SVs:
+  data.frame: with eight columns: ID, CHR, POS, REFALSE, ALT, symbol, id, type.  The first four columns are simply copied over from the SNP file.  The symbol column contains the Gene Symbol.  The id column contains a gene ID (MGI, Ensembl, NCBI or VEGA).  The type column contains "intergenic", "3UTR", "exon", "intron" or "5UTR", depending on the location of the variant in a gene.
 }
 \seealso{
   \code{\link{get.variants}{get.variants}}

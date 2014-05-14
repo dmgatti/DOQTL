@@ -5,7 +5,6 @@
   Given a set of numeric SNPs, cluster the strains based on allele sharing. This function hierarchically clusters the strains based on the proportion of SNPs that share alleles between each strain.  Note: numeric snps, not character snps, are the input to this function.
 }
 \usage{cluster.strains(variants) }
-
 \arguments{
   \item{variants}{
     data.frame, numeric variants as returned by \code{\link{convert.variants.to.numeric}}.

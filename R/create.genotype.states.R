@@ -8,7 +8,7 @@
 # Arguments: founders, character vector with founder letters.
 create.genotype.states = function(founders) {
   states = outer(founders, founders, paste, sep = "")
-  states = sort(states[upper.tri(states, diag = T)])
+  states = sort(states[upper.tri(states, diag = TRUE)])
   return(list(auto = states, X = list(F = states, M = founders),
          founders = founders))
 } # create.genotype.states()
