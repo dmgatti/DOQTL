@@ -185,8 +185,10 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
         data$geno = as.matrix(data$geno[,colnames(data$geno) %in% snps[,1]])
         snps = snps[snps[,1] %in% colnames(data$geno),]
         rm(MM_geno)
+
       ### Intensity ###
       } else if(method == "intensity") {
+
         # We have to put this line in to satisfy R CMD build --as-cran
         MM_x = NULL
         MM_y = NULL
@@ -232,6 +234,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
 
     ### Custome Array ###
     } else {
+
       # array = 'other'
       # We have a custom array. The user must supply SNPs, founder data.
       if(missing(founders)) {
@@ -301,6 +304,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
         names(data$gen)= nm
       } # else
     } # if(sampletype == "DO")
+
   ### DO/F1 ###
   } else if (sampletype == "DOF1") {
 
@@ -316,9 +320,10 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
       # Keep only the collaborative cross SNPs.
 #      snps = snps[snps$Collaborative.Cross == 1 | snps$MUGA == 1 |
 #	              snps$C57BL.6 == 1,]
-      snps = snps[snps$Collaborative.Cross == 1,]
-      snps = snps[!is.na(snps[,4]),]
+      snps = snps[snps$Collaborative.Cross == 1 | snps$Chr.Y == 1,]
+      snps = snps[!is.na(snps[,4]) | snps[,2] == "Y",]
       snps = snps[,1:4]
+
       # We have to put this line in to satisfy R CMD build --as-cran
       MM_sex = NULL
       MM_code = NULL
@@ -474,7 +479,9 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
 
   # Fill in any missing F1s.
   attr(founders, "method") = attr(data, "method")
-  founders = add.missing.F1s(founders, snps)
+  if(sampletype != "DOF1") {
+    founders = add.missing.F1s(founders, snps)
+  } # if(sampletype != "DOF1")
 
   # Add a slash to the output directory, if required.
   output.dir = add.slash(output.dir)
@@ -530,6 +537,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
      data$geno = dir(path = tmpdir, pattern = "data_geno_chr", full.names = TRUE)
      founders$geno = dir(path = tmpdir, pattern = "founders_geno_chr",
                      full.names = TRUE)
+
      # Split up the SNPs and order them numerically.
      snps = split(snps, snps[,2])
      old.warn = options("warn")$warn

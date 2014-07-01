@@ -38,7 +38,7 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
            "the marker locations in the snps argument."))
     } # if(missing(snps))
 	
-    snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+    snps  = snps[snps[,1] %in% dimnames(probs)[[3]],]
     probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
     probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
     snps[,2] = as.character(snps[,2])
@@ -88,9 +88,13 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
     # Restore the dimensions and dimnames.
     K = matrix(res$K, dim(probs)[1], dim(probs)[1], dimnames = list(dimnames(probs)[[1]], 
         dimnames(probs)[[1]]))
+		
   } # else
+  
   return(K)
+  
 } # kinship.probs()
+
 
 # This function computes kinship by imputing the Sanger SNPs onto the DO
 # genomes and then using allele sharing to compute kinship.

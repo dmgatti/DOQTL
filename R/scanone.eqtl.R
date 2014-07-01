@@ -19,13 +19,16 @@
 #                   Rows and columns must have names.
 # Returns: numeric matrix with LOD values for each gene and snp.
 scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
+
   time1 = proc.time()[3]
+
   # expr, probs and snps cannot be null.
   if(missing(expr) || missing(probs)) {
     stop(paste("One of the required arguments is null.  Please make sure",
          "that expr and probs are not null."))
   } # if(is.null(expr) | ...
   expr = t(expr)
+
   # Verify that the number of rows and columns match in the data.
   # Same number of samples in expr, probs and addcovar.
   if(ncol(expr) != dim(probs)[[1]]) {
@@ -41,6 +44,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
            "equal the number of columns in expr (", nrow(expr) ,")."))
     } # if(nrow(addcovar) != nrow(expr))
   } # if(!missing(addcovar))
+
   # Verify that the number of samples is the same in the kinshp and 
   # expression matrices.
   if(!missing(K)) {
@@ -55,6 +59,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
             ")."))
     } # if(ncol(K) != ncol(expr))
   } # if(!missing(K))
+
   # Match up the sample IDs.
   if(is.null(colnames(expr))) {
     stop(paste("expr must have sample IDs in the column names."))
@@ -67,6 +72,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
     K = K[match(rownames(K), colnames(expr)),
           match(colnames(K), colnames(expr))]
   } # if(!is.null(K))
+
   # Convert the expression data to a matrix.
   expr = as.matrix(expr)
   # Convert the SNPs into list of matrices, one for each founder.
@@ -76,6 +82,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
   } # for(i)
   probs = p2
   rm(p2)
+
   # Create an error covariance matrix.
   correctionMatrix = numeric()
   if(!missing(K)) {
@@ -88,16 +95,19 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
     correctionMatrix = v %*% diag(1./sqrt(d)) %*% t(v)
     rm(eig, v, d, K)
   } # if(!missing(K))
+
   # Add an intercept and rotate the covariates.
   cvrt = matrix(1, nrow = 1, ncol = ncol(expr))
   if(!missing(addcovar)) {
     cvrt = rbind(cvrt, t(addcovar))
   } # if(!missing(addcovar))
+
   if(length(correctionMatrix) > 0) {
      cvrt = cvrt %*% correctionMatrix
   } # if(length(correctionMatrix) > 0)
   q = qr(t(cvrt))
   cvrt = t(qr.Q(q))
+
   # Rotate and center the genes.
   if(length(correctionMatrix) > 0) {
     expr = expr %*% correctionMatrix
@@ -107,6 +117,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
   div[div == 0] = 1
   expr = expr / div
   rm(div)
+
   # Rotate and center the SNPs. 
   for(i in 1:length(probs)) {
     if(length(correctionMatrix) > 0) {
@@ -114,6 +125,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
     } # if(length(correctionMatrix) > 0)
     probs[[i]] = probs[[i]] - tcrossprod(probs[[i]], cvrt) %*% cvrt
   } # for(i)
+
   for(i in 1:length(probs)) {
     if(i > 1) {
       for(j in 1:(i-1)) {
@@ -127,16 +139,23 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
     probs[[i]] = probs[[i]] / div
     probs[[i]][drop,] = 0
   } # for(i)
+
   probs = probs[1:(length(probs)-1)]
   rm(div, drop)
   R2 = 0;
   for(i in 1:length(probs)) {
     R2 = R2 + tcrossprod(probs[[i]], expr)^2
   } # for(i)
+
   print(paste("Time:", proc.time()[3] - time1, "sec."))
+
   # Return the LOD.
   return((-ncol(expr) * log(1.0 - R2)) / (2 * log(10)))
+
 } # scanone.eqtl()
+
+
+
 ################################################################################
 # Helper function for use in merge.analysis(). This uses the matrix eqtl 
 # algorithm on a matrix of SNPs that are coded as 0, 0.5 and 1, with the 

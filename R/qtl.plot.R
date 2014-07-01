@@ -173,7 +173,7 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
   # Plot the coefficients.
   plot(lod[,3], coef[,colors[1,1]], type = "l", col = colors[1,3], lwd = 2,
        ylim = c(min(coef, na.rm = TRUE), max(coef * 2, na.rm = TRUE)), xlab = 
-       paste("Chr", chr), ylab = "Coefficient", axes = FALSE, ...)
+       paste("Chr", chr), ylab = "Founder Effects", axes = FALSE, ...)
   abline(v = 0:20 * 10, col = "grey80")
   for(i in 1:nrow(colors)) {
     points(lod[,3], coef[,colors[i,1]], type = "l", col = colors[i,3],

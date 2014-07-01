@@ -19,28 +19,35 @@
 #            csq: boolean that is TRUE if variant consequence should be returned.
 read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
            return.val = c("allele", "number"), return.qual = TRUE, csq = FALSE) {
+		   
   return.val = match.arg(return.val)
+  
   if(missing(vcf.file)) {
     stop(paste("vcf.file cannot be missing. Please enter the full path to a",
          "Sanger Mouse Genomes Project VCF file."))
   } # if(missing(vcf.file))
+  
   if(length(chr) != length(start) | length(chr) != length(end)) {
     stop(paste("The nubmer of locations in chr, start and end must be equal.\n",
          "len(chr) =", length(chr), "len(start) =", length(start), "len(end) =",
          length(end)))
   } # if(length(chr) != length(start) | ...
-  if(start > end) {
-    stop(paste("Start cannot be larger than end. Please enter a start positon",
+  
+  if(any(start > end)) {
+    stop(paste("Start cannot be larger than end. Please enter a start position",
          "that is less than the end position."))
   } # if(start > end)
+
   # In the mouse, we assume that start values less than 200 are in Mb because
   # the longest chromosome is less than 200 Mb.
-  if(start <= 200) {
+  if(any(start <= 200)) {
     start = start * 1e6
   } # if(start <= 200)
-  if(end <= 200) {
+
+  if(any(end <= 200)) {
     end = end * 1e6
   } # if(end <= 200)
+
   # Query Tabix indexed VCF file.
   tabix = TabixFile(file = vcf.file)
   open(con = tabix)
@@ -51,6 +58,7 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
   colnames = sub(hdr$comment, "", hdr$header[length(hdr$header)])
   colnames = strsplit(colnames,, split = "\t")[[1]]
   keep = 1:length(colnames)
+  
   if(!missing(strains)) {
     if(!all(strains %in% colnames)) {
       stop(paste("All strains not in VCF file. Missing strains:",
@@ -58,6 +66,7 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
     } # if(!all(strains %in% colnames))
     keep = c(1:9, which(colnames %in% strains))
   } # if(!missing(strains))
+  
   if(length(grep("snp", vcf.file)) > 0) {
     retval = read.vcf.snp(data, keep, colnames, csq, return.val, return.qual)
   } else if(length(grep("indel", vcf.file)) > 0) {
@@ -68,6 +77,7 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
     stop(paste("Unknown file type. The VCF file name must contain one of",
          "snp, indel or SV in order to identify the type of file to parse."))
   } # else
+  
   # If there was only one query, then return a data.frame rather than a list
   # of data.frames.
   if(length(retval) == 1) {
@@ -80,8 +90,11 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
 # Retrieve SNPs from a Sanger VCF file.
 ################################################################################
 read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
+
   data.not.empty = which(sapply(data, length) > 0)
+  
   for(i in data.not.empty) {
+  
     data[[i]] = strsplit(data[[i]], split = "\t")
     data[[i]] = matrix(unlist(data[[i]]), nrow = length(data[[i]]),
                 byrow = TRUE, dimnames = list(NULL, colnames))
@@ -97,12 +110,16 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
            ncol = length(d2), dimnames = list(NULL, names(d2)))
     rm(d2)
     gc()
+	
     if(return.val == "number") {
+	
       geno = sub("/", "", geno)
       geno = sub("\\.", NA, geno)
       geno = matrix(as.numeric(geno), nrow(geno), ncol(geno), dimnames = 
              dimnames(geno))
+			 
     } else if(return.val == "allele") {
+	
       # Create a matrix that maps numeric allele calls to nucleotide allele
       # calls.
       alt = strsplit(data[[i]][,colnames(data[[i]]) == "ALT"], split = ",")
@@ -113,6 +130,7 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
       # be set to num.alleles + 1.
       repl = matrix("N", nrow = nrow(data[[i]]), ncol = num.alleles + 1)
       repl[,1] = data[[i]][,ref.col]
+	  
       for(j in 1:num.alleles) {
         rng = which(j <= alt.len)
         repl[rng,j+1] = sapply(alt[rng], "[", j)
@@ -132,11 +150,13 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
       g2 = apply(geno, 2, function(z) {
              repl[matrix(c(1:nrow(geno), z + 1), ncol = 2),drop = FALSE]
            })
+		   
       # This is neccessary when there is only one SNP and R turns g2
       # into a vector.
       if(!is.matrix(g2)) {
         g2 = matrix(g2, nrow = 1)
       } # if(!is.matrix(g2))
+	  
       # Create a two nucleotide character genotype matrix.
       g2 = split.data.frame(t(g2), factor(rep(1:ncol(qual), each = 2)))
       g2 = lapply(g2, function(z) { paste(z[1,], z[2,], sep = "") })
@@ -144,12 +164,16 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
                     dimnames = dimnames(qual))
       rm(g2)
       gc()
+	  
     } # else if(return.val == "allele")
+	
     # Add the positions and alleles and combine the genotypes and quality
     # scores.
     pos = data[[i]][,1:5,drop = FALSE]
     info = data[[i]][,colnames(data[[i]]) == "INFO"]
+	
     if(return.qual) {
+	
       data[[i]] = data.frame(geno, qual)
       # This reorders the data with genotype and quality for each strain
       # next to each other.
@@ -158,10 +182,15 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
                                          (ncol(data[[i]]) / 2)
       data[[i]] = data[[i]][,index,drop = FALSE]
       colnames(data[[i]]) = sub("\\.1$", "qual", colnames(data[[i]]))
+	  
     } else {
+	
       data[[i]] = data.frame(geno, stringsAsFactors = FALSE)
+	  
     } # else
+	
     data[[i]] = cbind(pos, data[[i]])
+	
     # If the user has requested variants consequences, add them in the last 
     # column.
     if(csq) {
@@ -179,12 +208,17 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
   return(data)
   
 } # read.vcf.snp()
+
+
 ################################################################################
 # Retrieve Indels from a Sanger VCF file.
 ################################################################################
 read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
+
   data.not.empty = which(sapply(data, length) > 0)
+
   for(i in data.not.empty) {
+
     data[[i]] = strsplit(data[[i]], split = "\t")
     data[[i]] = matrix(unlist(data[[i]]), nrow = length(data[[i]]),
                 byrow = TRUE, dimnames = list(NULL, colnames))
@@ -223,6 +257,7 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
         rng = which(j <= alt.len)
         repl[rng,j+1] = sapply(alt[rng], function(z) { z[j] })
       } # for(j)
+
       # Convert the genotypes to a numeric matrix.
       geno = apply(geno, 2, function(z){ 
                matrix(unlist(strsplit(z, split = "/")), ncol = 2, byrow = TRUE)
@@ -234,11 +269,13 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
       g2 = apply(geno, 2, function(z) {
              repl[matrix(c(1:nrow(geno), z + 1), ncol = 2)]
            })
+
       # This is neccessary when there is only one SNP and R turns g2
       # into a vector.
       if(!is.matrix(g2)) {
         g2 = matrix(g2, nrow = 1)
       } # if(!is.matrix(g2))
+
       # Create a two allele character genotype matrix.
       # If all indels were homozygotes, we could just insert a single copy
       # of the allele. But there are het calls, so we concatenate the two
@@ -250,6 +287,7 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
       rm(g2)
       gc()
     } # else if(return.val == "allele")
+
     # Add the positions and alleles and combine the genotypes and quality
     # scores.
     pos = data[[i]][,1:5]
@@ -260,6 +298,7 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
     data[[i]] = data[[i]][,index]
     colnames(data[[i]]) = sub("1$", "qual", colnames(data[[i]]))
     data[[i]] = cbind(pos, data[[i]])
+
     # If the user has requested variants consequences, add them in the last 
     # column.
     if(csq) {
@@ -273,15 +312,21 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
       } # if(length(which.csq) > 0)
     } # if(csq)
   } # for(i)
+
   return(data)
   
 } # read.vcf.indel()
+
+
 ################################################################################
 # Retrieve structural variants from a Sanger VCF file.
 ################################################################################
 read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
+
   data.not.empty = which(sapply(data, length) > 0)
+
   for(i in data.not.empty) {
+
     data[[i]] = strsplit(data[[i]], split = "\t")
     data[[i]] = matrix(unlist(data[[i]]), nrow = length(data[[i]]),
                 byrow = TRUE, dimnames = list(NULL, colnames))
@@ -296,12 +341,16 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
            ncol = length(d2), dimnames = list(NULL, names(d2)))
     rm(d2)
     gc()
+
     if(return.val == "number") {
+
       geno = sub("/", "", geno)
       geno = sub("\\.", NA, geno)
       geno = matrix(as.numeric(geno), nrow(geno), ncol(geno), dimnames = 
              dimnames(geno))
+
     } else if(return.val == "allele") {
+
       # Create a matrix that maps numeric allele calls to nucleotide allele
       # calls.
       alt = strsplit(data[[i]][,colnames(data[[i]]) == "ALT"], split = ",")
@@ -344,6 +393,7 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
       rm(g2)
       gc()
     } # else if(return.val == "allele")
+
     # Add the positions and alleles and combine the genotypes and quality
     # scores.
     pos = data[[i]][,1:5]
@@ -355,6 +405,7 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
     data[[i]] = data[[i]][,index]
     colnames(data[[i]]) = sub("1$", "qual", colnames(data[[i]]))
     data[[i]] = cbind(pos, data[[i]])
+
     # If the user has requested variants consequences, add them in the last 
     # column.
     if(csq) {
@@ -367,10 +418,15 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
         data[[i]] = data.frame(data[[i]], conseq = conseq, stringsAsFactors = FALSE)
       } # if(length(which.csq) > 0)
     } # if(csq)
+
   } # for(i)
+
   return(data)
   
 } # read.vcf.sv()
+
+
+
 ################################################################################
 # Get the strain names available in the requested VCF file.
 ################################################################################
