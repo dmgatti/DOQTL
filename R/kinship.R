@@ -8,16 +8,19 @@
 # Arguments: geno: character matrix containing allele calls for each sample and
 #                  marker. num.snps x num.samples
 kinship.alleles = function(geno) {
-  
+
   K = matrix(0, ncol(geno), ncol(geno), dimnames = list(colnames(geno),
       colnames(geno)))
-  
+	  
   for(i in 1:ncol(geno)) {
     K[,i] = colMeans(geno[,i] == geno)
   } # for(i)
   
   return(K)
+  
 } # kinship.alleles()
+
+
 
 # This function takes the 8 state founder probabilities and calculates
 # the cosine of the angle between each sample.
@@ -67,11 +70,9 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
                     dim(probs)[1], dimnames = 
                     list(dimnames(probs)[[1]], dimnames(probs)[[1]]))
     } # for(i)
-    
     K = as.list(chr)
     names(K) = chr
     num.snps = sapply(keep, length)
-    
     for(i in 1:length(chr)) {
       K[[i]] = matrix(0, dim(probs)[1], dim(probs)[1], dimnames = 
                list(dimnames(probs)[[1]], dimnames(probs)[[1]]))
@@ -81,9 +82,7 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
       # Divide by the number of SNPs on the other (!= i) chromosomes.
       K[[i]] = K[[i]] / sum(num.snps[chr != chr[i]])
     } # for(i)
-    
   } else {
-    
     # Use all chromosomes to make a single kinship matrix.
     K = matrix(0, dim(probs)[1], dim(probs)[1], dimnames = list(
         dimnames(probs)[[1]], dimnames(probs)[[1]]))
@@ -102,5 +101,6 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
   return(K)
   
 } # kinship.probs()
+
 
 
