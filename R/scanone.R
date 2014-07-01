@@ -7,6 +7,8 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
     stop("rownames(pheno) is null. The sample IDs must be in rownames(pheno).")
   } # if(is.null(rownames(pheno)))
 
+  snps[,2] = as.character(snps[,2])
+
   num.auto = get.num.auto(snps)
 
   # Convert phenotype names to phenotype column numbers.
@@ -111,6 +113,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
   names(retval) = colnames(pheno)[pheno.col]
   index = 1
   for(i in pheno.col) {
+
     print(colnames(pheno)[i])
     p = pheno[,i]
     names(p) = rownames(pheno)
@@ -118,6 +121,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
     # Autosomes
     auto = which(snps[,2] %in% 1:num.auto)
+
     if(missing(addcovar)) {
       # No covariates.
       if(missing(K)) {
@@ -142,21 +146,27 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
                      addcovar = addcovar[keep,,drop = FALSE],
                      snps = snps[auto,])
         }  else {
+
           auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,auto], 
                      K = K[keep,keep], addcovar = addcovar[keep,,drop = FALSE],
                      snps = snps[auto,])
 
         } # else
       } else {
+
         if(missing(K)) {
+
           auto.qtl = qtl.qtlrel(pheno = p[keep], probs = probs[keep,,auto],
                      addcovar = addcovar[keep,,drop = FALSE], 
                      intcovar = intcovar[keep,,drop = FALSE], 
                      snps = snps[auto,])
+
         } else {
+
           auto.qtl = qtl.qtlrel(pheno = p[keep], probs = probs[keep,,auto],
                      K = K[keep,keep], addcovar = addcovar[keep,,drop = FALSE], 
                      intcovar = intcovar[keep,,drop = FALSE], snps = snps[auto,])
+
         } # else
       } # else
     } # else
@@ -178,6 +188,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
         # Take the male and female probabilities and place them into 
         # one big array.
         if(model == "additive") {
+
           mfprobs = array(0, c(dim(probs)[1], 2 * dim(probs)[2], length(xchr)),
                     dimnames = list(dimnames(probs)[[1]], paste(rep(c("F", "M"), 
                     each = dim(probs)[2]), dimnames(probs)[[2]], sep = "."), 
@@ -188,7 +199,9 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
           for(j in males) {
             mfprobs[j,(dim(probs)[2] + 1):dim(mfprobs)[2],] = probs[j,,xchr]
           } # for(j)
+
         } else if(model == "full") {
+
           tmp = matrix(unlist(strsplit(dimnames(probs)[[2]], split = "")),
                 nrow = 2)
           homo = dimnames(probs)[[2]][which(tmp[1,] == tmp[2,])]
@@ -203,10 +216,13 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
           for(j in males) {
             mfprobs[j,(dim(probs)[2] + 1):dim(mfprobs)[2],] = probs[j,homo,xchr]
           } # for(j)
+
         } # else if(model == "full")
+
         # If we have both males and females, then we need to remove one 
         # column from the males.
         mfprobs = mfprobs[,-grep("M.A", dimnames(mfprobs)[[2]]),]
+
       } else if(length(females) > 0) {
         mfprobs = probs[,,xchr]
         dimnames(mfprobs)[[2]] = paste("F", dimnames(mfprobs)[[2]], sep = ".")
@@ -257,16 +273,23 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
           } # else
         } # else
       } # else
+
       auto.qtl$lod  = list(A = auto.qtl$lod$A,  X = x.qtl$lod)
       auto.qtl$coef = list(A = auto.qtl$coef$A, X = x.qtl$coef)
+
     } # if(length(xchr) > 0)
+
     retval[[index]] = auto.qtl
     class(retval[[index]]) = c("doqtl", class(retval[[index]]))
     attr(retval[[index]], "model") = "additive"
     index = index + 1
+
   } # for(i)
+
   if(length(retval) == 1) {
     retval = retval[[1]]
   } # if(length(retval) == 1)
+
   return(retval)
+
 } # scanone()

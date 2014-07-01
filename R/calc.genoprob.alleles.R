@@ -96,6 +96,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
         male.b = tmp$b
         rm(tmp)
       } # if(length(males) > 0)
+	  
       # Combine the male and female prsmth data.
       if(length(females) > 0) {
         if(length(males) > 0) {

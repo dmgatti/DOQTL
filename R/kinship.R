@@ -8,13 +8,20 @@
 # Arguments: geno: character matrix containing allele calls for each sample and
 #                  marker. num.snps x num.samples
 kinship.alleles = function(geno) {
+
   K = matrix(0, ncol(geno), ncol(geno), dimnames = list(colnames(geno),
       colnames(geno)))
+	  
   for(i in 1:ncol(geno)) {
     K[,i] = colMeans(geno[,i] == geno)
   } # for(i)
+  
   return(K)
+  
 } # kinship.alleles()
+
+
+
 # This function takes the 8 state founder probabilities and calculates
 # the cosine of the angle between each sample.
 # Arguments: probs: 3D array containing founder haplotype contributions.
@@ -38,7 +45,7 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
            "the marker locations in the snps argument."))
     } # if(missing(snps))
 	
-    snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+    snps  = snps[snps[,1] %in% dimnames(probs)[[3]],]
     probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
     probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
     snps[,2] = as.character(snps[,2])
@@ -67,7 +74,7 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
     names(K) = chr
     num.snps = sapply(keep, length)
     for(i in 1:length(chr)) {
-      K[[i]] = matrix(res$K, dim(probs)[1], dim(probs)[1], dimnames = 
+      K[[i]] = matrix(0, dim(probs)[1], dim(probs)[1], dimnames = 
                list(dimnames(probs)[[1]], dimnames(probs)[[1]]))
       for(j in chr[chr[i] != chr]) {
         K[[i]] = K[[i]] + Kbychr[[j]]
@@ -88,12 +95,12 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
     # Restore the dimensions and dimnames.
     K = matrix(res$K, dim(probs)[1], dim(probs)[1], dimnames = list(dimnames(probs)[[1]], 
         dimnames(probs)[[1]]))
+		
   } # else
+  
   return(K)
+  
 } # kinship.probs()
 
-# This function computes kinship by imputing the Sanger SNPs onto the DO
-# genomes and then using allele sharing to compute kinship.
-kinship.geno = function() {
-# Under construction
-} # kinship.geno()
+
+

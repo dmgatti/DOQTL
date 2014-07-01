@@ -53,11 +53,13 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
     # MegaMUGA founders seem to be well aligned to the data, so we're
     # not normalizing MegaMUGA data at the moment.
     if(attr(data, "array") != "megamuga") {
+
       newxy = quantilenorm(x1 = data$x, y1 = data$y, x2 = founders$x,
               y2 = founders$y)
       founders$x = newxy[[1]]
       founders$y = newxy[[2]]
       rm(newxy)
+
     } # if(attr(data, "array") != "megamuga")
     gc()
 
@@ -134,6 +136,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
         male.prsmth = tmp$prsmth
         rm(tmp)
       } # if(length(males) > 0)
+	  
       # Combine the male and female prsmth data.
       if(length(females) > 0) {
         if(length(males) > 0) {
@@ -164,6 +167,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                       output.dir = output.dir, chr = curr.chr, all.chr = chr,
                       sex = "F")
       } # if(!is.null(female.r.t.means))
+
       if(!is.null(male.r.t.means)) {
         # We don't want to pass prsmth in twice or else it will be written
         # out twice.
@@ -171,11 +175,53 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                       male.r.t.covars, output.dir = output.dir, chr = curr.chr, 
                       all.chr = chr, sex = "M")
       } # if(!is.null(male.r.t.means))
+
     } else if (curr.chr == "Y") {
+
       stop("Chr Y not implemented yet.")
+
+### DMG: NOT IMPLEMENTED YET.
+
+      # Keep only the males.
+      males = which(data$sex == "M")
+      founder.males = which(founders$sex == "M")
+
+      # Get founder centers.
+      fx = founders$x[founder.males,]
+      fy = founders$y[founder.males,]
+      fx = aggregate(fx, list(founders$code[founder.males]), mean)
+      fy = aggregate(fy, list(founders$code[founder.males]), mean)
+
+      # Get distances between founders and samples.
+      x = t(rbind(founders$x[founder.males,], data$x[males,]))
+      y = t(rbind(founders$y[founder.males,], data$y[males,]))
+
+      d = matrix(0, ncol(x), ncol(x), dimnames = list(colnames(x), colnames(x)))
+      for(i in 1:ncol(x)) {
+        d[i,] = sqrt(colSums((x[,i] - x)^2) + colSums((y[,i] - y)^2))
+      } # for(i)
+      d = d[!is.na(d[1,]), !is.na(d[,1])]
+
+      # Cluster using PAM.
+      cl = pam(x = d, k = length(founders$states$founders), diss = TRUE)
+  
+      # Calculate means and covariances for each cluster.
+      mean.covar = as.list(1:length(founders$states$founders))
+      names(mean.covar) = founders$states$founders
+      for(i in 1:length(founders$states$founders)) {
+        rng = which(cl$clustering == i)
+        mean.covar[[i]]$mean = cbind(rowMeans(x[,rng]), rowMeans(y[,rng]))
+        mean.covar[[i]]$covar = cov(t(x[,rng]), t(y[,rng]))
+      } # for(i)
+      
+      
+
     } else if (curr.chr == "M") {
+
       stop("Chr M not implemented yet.")
+
     } else {
+
       # Autosomes.
       data$theta = (2.0 / pi) * atan2(data$y, data$x)
       data$rho = sqrt(data$x^2 + data$y^2)
@@ -183,10 +229,12 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
       founders$rho = sqrt(founders$x^2 + founders$y^2)
       old.states = founders$states
       founders$states = founders$states$auto
+
       hmm = hmm.intensity(data = data, founders = founders,
             sex = "F", snps = cur.snps, chr = curr.chr,
             trans.prob.fxn = trans.prob.fxn)
       founders$states = old.states
+
       # Write out the smoothed probabilities and the founder state means and 
       # variances.
       write.results(prsmth = hmm$prsmth, 

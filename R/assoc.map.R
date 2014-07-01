@@ -35,56 +35,71 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   scan  = match.arg(scan)
   model = match.arg(model)
   output = match.arg(output)
+  
   if(scan == "two") {
     stop("merge.analysis: scan two not implemented yet.")
   } # if(scan == "two")
+  
   if(model != "additive") {
     stop("merge.analysis: Dominance and full models not implemented yet.")
   } # if(model != "additive")
+  
   if(missing(pheno)) {
     stop("The phenotypes are missing. Please supply a phenotype data frame.")
   } # if(missing(pheno))
+  
   if(missing(probs)) {
     stop(paste("The founder probabilities are missing. Please supply an array",
          "of founder probabilities."))
   } # if(missing(probs))
+  
   if(missing(K)) {
     stop(paste("The kinship matrix is missing. Please supply a kinship matrix",
          "for all samples."))
   } # if(missing(K))
+  
   if(missing(chr)) {
     stop("The QTL chromosome must be specified.")
   } # if(missing(chr))
   if(missing(start)) {
     stop("The QTL start position must be specified.")
   } # if(missing(start))
+  
   if(missing(end)) {
     stop("The QTL end position must be specified.")
   } # if(missing(end))
+  
   # Subset all of the data to only contain the samples in common.
   pheno = pheno[!is.na(pheno[,pheno.col]),,drop = FALSE]
   samples = intersect(rownames(pheno), dimnames(probs)[[1]])
+  
   if(length(samples) == 0) {
     stop(paste("rownames(pheno) does not contain any sample IDs that",
          "match dimnames(probs)[[1]]. Please verify that both variables",
          "contain the same sample IDs."))
   } # if(length(samples) == 0)
+  
   if(!missing(addcovar)) {
+    addcovar = as.matrix(addcovar)
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
     if(nrow(addcovar) == 0) {
       stop(paste("There are no common sample IDs between rownames(addcovar)",
            "and rownames(pheno). Please ensure that there is some overlap",
            "in sample IDs between rownames(addcovar) and rownames(pheno)."))
     } # if(nrow(addcovar) == 0)
+	
     remove = which(rowSums(is.na(addcovar)) > 0)
+	
     if(length(remove) > 0) {
       samples = samples[-remove]
       addcovar = addcovar[-remove,,drop = FALSE]
     } # if(length(remove) > 0)
   } # if(!missing(addcovar))
+  
   pheno = pheno[rownames(pheno) %in% samples,,drop = FALSE]
   probs = probs[dimnames(probs)[[1]] %in% samples,,]
   probs = probs[match(rownames(pheno), dimnames(probs)[[1]]),,]
+  K = as.matrix(K)
   K = K[rownames(K) %in% samples, colnames(K) %in% samples]
   K = K[match(rownames(pheno), rownames(K)), match(rownames(pheno), colnames(K))]
   print(paste("Mapping with", nrow(pheno), "samples."))
@@ -94,23 +109,28 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
+  
   if(!all(snps[,1] == dimnames(probs)[[3]])) {
     stop(paste("All of the SNP IDs in snps do not match the SNP IDs in",
          "dimnames(probs)[[3]]."))
   } # if(!all(snps[,1] == dimnames(probs)[[3]]))
+  
   # Subset the SNPs to be the same.
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
   probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
   stopifnot(all(snps[,1] == dimnames(probs)[[3]]))
   start = as.numeric(start)
+  
   if(start <= 200) {
     start = start * 1e6
   } # if(start <= 200)
+  
   end = as.numeric(end)
   if(end <= 200) {
     end = end * 1e6
   } # if(end <= 200)
+  
   # Expand the start and end to the nearest markers.
   snps = snps[snps[,2] == chr,]
   snps = snps[intersect(which(snps[,3] >= start * 1e-6) - 1,
@@ -122,15 +142,20 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   print("Retrieving SNPs...")
   con = TabixFile(snp.file)
   open(con)
+  
   # Get the column names from the last row of the header info.
   hdr = headerTabix(con)
   hdr = strsplit(hdr$header, split = "\t")[[length(hdr$header)]]
   hdr = sub("^#", "", hdr)
+  
   # Retrieve the data.
   sanger = scanTabix(con, param = gr)
+  
   # Close the connection.
   close(con)
+  
   print(paste("Retrieved", length(sanger[[1]]), "SNPs."))
+  
   # Split the columns up (tab-delimited).
   print("Finding unique SNP patterns...")
   sanger = strsplit(sanger[[1]], split = "\t")
@@ -140,26 +165,33 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   # Keep only high quality reads where all quality scores = 1.
   qual.columns = grep("quality", colnames(sanger))
   sanger = sanger[rowMeans(sanger[,qual.columns] == "1") == 1,,drop = FALSE]
+  
   # Remove quality scores.
   sanger = sanger[,-qual.columns]
+  
   # Remove SNPs with "NN" calls because we don't know how to assign
   # the founder alleles in that case.
   sanger = sanger[rowSums(sanger == "NN") == 0,]
+  
   # Make reference allele.
   ref.col = which(colnames(sanger) == "REF")
   ref = paste(sanger[,ref.col], sanger[,ref.col], sep = "")
   pos = sanger[,colnames(sanger) == "POS"]
+  
   # Convert allele calls to numbers.
   sanger = matrix(as.numeric(sanger[,-1:-5] != ref), nrow(sanger), ncol(sanger) - 5,
            dimnames = list(NULL, colnames(sanger)[-1:-5]))
+		   
   # Remove SNPs that are all 0s.
   na.rows = which(rowSums(is.na(sanger)) > 0)
   remove = na.rows[rowSums(sanger[na.rows,], na.rm = TRUE) == 0]
+  
   if(length(remove) > 0) {
     sanger = sanger[-remove,]
     ref = ref[-remove]
     pos = pos[-remove]
   } # if(length(remove) > 0)
+  
   # Change the allele calls so that the MAF <= 4.
   wh = which(rowSums(sanger) > 4)
   sanger[wh,] = 1 - sanger[wh,]
@@ -169,6 +201,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(any(is.na(m))) {
     stop("One of the DO founders is not in the SNP file.")
   } # if(any(is.na(m)))
+  
   sanger = sanger[,m]
   rownames(sanger) = pos
   # Get the SDPs (this is DO/CC specific).
@@ -190,6 +223,8 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   attr(retval, "class") = c(attr(retval, "class"), "assoc")
   return(retval)
 } # assoc.map()
+
+
 ##########
 # Association mapping permutations.
 assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
@@ -197,31 +232,40 @@ assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
             scan = c("one", "two"), output = c("lod", "p-value", "bic"),
             snp.file = "ftp://ftp.jax.org/SNPtools/variants/cc.snps.NCBI38.txt.gz",
             nperm = 1000) {
+			
   scan  = match.arg(scan)
   model = match.arg(model)
   output = match.arg(output)
+  
   if(scan == "two") {
     stop("merge.analysis: scan two not implemented yet.")
   } # if(scan == "two")
+  
   if(model != "additive") {
     stop("merge.analysis: Dominance and full models not implemented yet.")
   } # if(model != "additive")
+  
   if(missing(pheno)) {
     stop("The phenotypes are missing. Please supply a phenotype data frame.")
   } # if(missing(pheno))
+  
   if(missing(probs)) {
     stop(paste("The founder probabilities are missing. Please supply an array",
          "of founder probabilities."))
   } # if(missing(probs))
+  
   # Subset all of the data to only contain the samples in common.
   pheno = pheno[!is.na(pheno[,pheno.col]),,drop = FALSE]
   samples = intersect(rownames(pheno), dimnames(probs)[[1]])
+  
   if(length(samples) == 0) {
     stop(paste("rownames(pheno) does not contain any sample IDs that",
          "match dimnames(probs)[[1]]. Please verify that both variables",
          "contain the same sample IDs."))
   } # if(length(samples) == 0)
+  
   if(!missing(addcovar)) {
+    addcovar = as.matrix(addcovar)
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
     if(nrow(addcovar) == 0) {
       stop(paste("There are no common sample IDs between rownames(addcovar)",
@@ -234,6 +278,7 @@ assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
       addcovar = addcovar[-remove,,drop = FALSE]
     } # if(length(remove) > 0)
   } # if(!missing(addcovar))
+  
   pheno = pheno[rownames(pheno) %in% samples,,drop = FALSE]
   probs = probs[dimnames(probs)[[1]] %in% samples,,]
   probs = probs[match(rownames(pheno), dimnames(probs)[[1]]),,]
@@ -248,6 +293,7 @@ assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
   start = 0
   end = 200e6
   retval = matrix(0, length(chr), nperm)
+  
   # Loop through each chromosome.
   for(c in 1:length(chr)) {
     # Expand the start and end to the nearest markers.
@@ -333,6 +379,8 @@ assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
   attr(retval, "class") = c(attr(retval, "class"), "assoc")
   return(retval)
 } # assoc.map.perms()
+
+
 ###
 # Helper function for one-way scan.
 # The chromosome range is based on the start and end of the Sanger SNP locations
