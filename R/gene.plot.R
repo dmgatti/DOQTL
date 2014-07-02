@@ -11,114 +11,151 @@
 # Returns: data.frame with gene symbol, gene start, gene end, text start, 
 #          text end and row.
 gene.plot = function(mgi, col = "black", ...) {
+
+  # If we have no genes, just plot an empty frame and return.
+  if(is.null(mgi) || nrow(mgi) == 0) {
+    plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
+    return()
+  } # if(is.null(mgi) || nrow(mgi) == 0)
+
   previous.cex = par("cex")
   call = match.call(expand.dots = TRUE)
-  # Get the Chr, start and end.
-  chr   = mgi$seqid[1]
-  start = min(mgi$start)
-  end   = max(mgi$stop)
+
+  m = which(names(call) == "xlim")
+
+  if(length(m) > 0) {
+    plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
+  } else {
+    plot(0, 0, col = 0, xlim = c(min(mgi$start), max(mgi$stop)) * 1e-6,
+         xlab = "", ylab = "", yaxt = "n", ...)
+  } # else
+  mtext(side = 1, line = 2, text = paste("Chr", mgi$seqid[1], "(Mb)"))
+
   # Line the genes up sequentially in columns.
   # Locs holds the gene symbol, the gene start and end, the text start and end,
   # as well as the row to plot on.
   locs = data.frame(name = mgi$Name, gstart = mgi$start * 1e-6,
-         gend = mgi$stop * 1e-6, tstart = rep(0, nrow(mgi)),
-         tend = rep(0, nrow(mgi)), row = 1:nrow(mgi))
+         gend = mgi$stop * 1e-6, tstart = mgi$stop * 1e-6 + strwidth("i"), 
+         tend = mgi$stop * 1e-6 + strwidth("i") + sapply(mgi$Name, strwidth))
+  locs = locs[order(locs$gstart),]
   par(lend = 2)
-  m = which(names(call) == "xlim")
-  if(length(m) > 0) {
-    plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
-  } else {
-    plot(0, 0, col = 0,  xlim = round(c(min(mgi$start), max(mgi$stop)) * 1e-6),
-         xlab = "", ylab = "", yaxt = "n", ...)
-  } # else
-  mtext(side = 1, line = 2, text = paste("Chr", chr, "(Mb)"))
-  old.cex = 100
-  iter = 0
-  while(abs(par("cex") - old.cex) > 0.1 & iter < 4) {
-    # Offset between gene end and text start.
-    offset = strwidth("i")
-    locs$tstart = locs$gend   + offset
-    locs$tend   = locs$tstart + strwidth(mgi$Name)
-    locs$row = 1:nrow(locs)
-    locs = line.up.genes(locs)
-    locs = resolve.collisions(locs)
-    # Determine the number of rows and the row height.
-    max.row = max(locs$row) + 1
-    usr = par("usr") 
-    rowht = (usr[4] - usr[3]) / max.row
-    old.cex = par("cex")
-    par(cex = old.cex * rowht / strheight("W"))
+
+  usr = par("usr")
+  nrows = 1 # Number of rows in the current plot.
+  row = 10  # Number of rows that we need.
+  ymin = 1  # Lowest y-value for the gene closest to the bottom of the plot.
+  iter = 0  # Number of iterations.
+
+  # We need at least enough rows in the plot to fit the data.
+  while((nrows < row | (usr[4] - ymin) / diff(usr[3:4]) < 0.5) & iter < 20) {
+
+    last.strht = strheight("I") 
+    retval = get.gene.locations(locs, usr)
+
+    ymin  = retval$newloc$bottom[nrow(retval$newloc)]
+    nrows = retval$nrows
+    row   = retval$row
+
+    # If we need more rows in the plot, then decrement cex until strheight("I") decreases.
+    if(row > nrows) {
+      while(strheight("I") == last.strht) {
+        par(cex = par("cex") * 0.99)
+      } # while(strheight("I") == last.strht)
+    } else if (row < nrows) {
+      while(strheight("I") == last.strht) {
+        par(cex = par("cex") * 1.01)
+      } # while(strheight("I") == last.strht)
+    } # else if (row < nrows)
+
     iter = iter + 1
-  } # for(i)
-  par(cex = 0.9 * par("cex"))
+
+  } # while((nrows < row | (usr[4] - ymin) ...
+
+  # If we have any horizontal collisions, shrink the font size slightly.
+  if(any((retval$newloc$textx + strwidth(retval$newloc$name))[-1] -
+         retval$newloc$left[-nrow(retval$newloc)] < 0)) {
+    last.strht = strheight("I") 
+    while(strheight("I") == last.strht) {
+      par(cex = par("cex") * 0.99)
+    } # while(strheight("I") == last.strht)
+    retval = get.gene.locations(locs, usr)
+  } # if(any((retval$newloc$textx  ...
+
   # Plot the genes.
-  rect(xleft = locs$gstart, ybottom = usr[4] - rowht * (locs$row + 1) + 0.05 * rowht, 
-       xright = locs$gend, ytop = usr[4] - rowht * locs$row - 0.05 * rowht,
-       density = -1, col = col, border = col)
-  text(x = locs$tstart, y = usr[4] - rowht * locs$row, 
-       labels = locs$name, adj = c(0,1), col = col)
+  rect(retval$newloc$left, retval$newloc$bottom, retval$newloc$right, 
+       retval$newloc$top, col = col, border = col)
+  text(retval$newloc$textx, retval$newloc$texty, retval$newloc$name, adj = c(0,0))
+
   par(cex = previous.cex)
+
   return(locs)
+
 } # gene.plot()
-# Place the genes in rows from the top of the screen to the bottom.
-# Start a new column when the row is at the bottom of the page.
-line.up.genes = function(locs) {
-  topleft = locs$tend[1]
-  row = 1
-  for(i in 1:nrow(locs)) {
-    if(locs$gstart[i] > topleft) {
-      topleft = locs$tend[i]
-      row = 1
-    } # if(locs$gstart[i] > topleft)
-    locs$row[i] = row
-    row = row + 1
-    i = i + 1
-  } # for(i)
-  locs$row[nrow(locs)] = row
-  return(locs)
-} # line.up.genes
-resolve.collisions = function(locs) {
-  # Look for collisions and move the gene down until it doesn't collide.
-  for(i in 1:nrow(locs)) {
-    # Get all of the genes in this row.
-    genes = which(locs$row == i)
-    # See if any overlap each other.
-    overlap = genes[which(locs$gstart[genes[-1]] < locs$tend[genes[-length(genes)]])]
-    if(length(overlap) > 0) {
-      # Go through each overlapping gene and move it down one row until it
-      # doesn't collide with any genes.
-      for(j in overlap) {
-        done = FALSE
-        while(!done) {
-          locs$row[j] = locs$row[j] + 1
-          rowgenes = which(locs$row == locs$row[j])
-          curr.gene = which(rowgenes == j)
-          rng = rowgenes[curr.gene + c(-1,1)]
-          rng = rng[!is.na(rng)]
-          if(length(rng) == 0) {
-            # This occurs when we have gone past the maximum number of rows.
-            done = TRUE
-          } else if(length(rng) == 1) {
-            # This occurs when the gene being moved is at the beginning or 
-            # end of the plot.
-            if(rng <= curr.gene) {
-              if(locs$gstart[j] > locs$tend[rng]) {
-                 done = TRUE
-              } #
-            } else {
-              if(locs$tend[j] < locs$gstart[rng]) {
-                 done = TRUE
-              } #            
-            } # else
-          } else if(length(rng) == 2) {
-            if(locs$gstart[j] > locs$tend[rng[1]] & 
-               locs$tend[j] < locs$gstart[rng[2]]) {
-               done = TRUE
-            } #
-          } # else
-        } # while(!done)
-      } # for(j)
-    } # if(length(overlap) > 0)
-  } # for(i)
-  return(locs)
-} # resolve.collisions()
+
+
+
+# Helper function to set gene locations on plot.
+get.gene.locations = function(locs, usr) {
+
+    boxheight = 1.1 * strheight("I")
+    offset = 0.1 * boxheight
+    rowheight = boxheight + offset
+    nrows = floor(diff(usr[3:4]) / rowheight)
+
+    row = 1
+    x = usr[1]
+    tmp = locs # tmp is a sacrificial data frame from which we will remove plotted genes.
+
+    # Try to fill in the genes without collisions.
+    # newloc holds the positions of the gene rectangles and names in user coordiantes.
+    newloc = data.frame(name = rep("", nrow(locs)), left = rep(0, nrow(locs)), 
+             bottom = rep(0, nrow(locs)), right = rep(0, nrow(locs)), 
+             top = rep(0, nrow(locs)), textx = rep(0, nrow(locs)), texty = rep(0, nrow(locs)))
+
+    i = 1    # Gene counter.
+    while(i <= nrow(locs)) {
+
+      # Find the gene with the minimum start position past the current X position.
+      wh = which(tmp$gstart >= x)
+
+      # If we found one, then add it to our list of positions (newloc).
+      if(length(wh) > 0) {
+
+        # idx indexes the current gene row in tmp.
+        idx = min(wh)
+        newloc$name[i] = tmp$name[idx]
+        newloc$left[i] = tmp$gstart[idx]
+        newloc$bottom[i] = usr[4] - row * rowheight + offset
+        newloc$right[i] = tmp$gend[idx]
+        newloc$top[i] = usr[4] - (row - 1) * rowheight - offset
+        newloc$textx[i] = tmp$tstart[idx]
+        newloc$texty[i] = usr[4] - row * rowheight + offset
+        x = newloc$textx[i] + strwidth(newloc$name[i]) + strwidth("i")
+
+        # Remove this gene from tmp.
+        tmp = tmp[-idx,]
+
+        # If our X position has moved past the right end of the plot, advance to the next
+        # row and reset the X position to the left edge of the plot (in user coordinates).
+        if(x > usr[2]) {
+          row = row + 1
+          x = usr[1]
+        } # if(x > usr[2])
+
+        # Increment the gene counter.
+        i = i + 1
+
+      } else {
+
+        # If we didn't find a gene past out current X position, advance to the next
+        # row and reset the X position to the left edge of the plot (in user coordinates).
+        row = row + 1
+        x = usr[1]
+
+      } # else
+
+    } # while(i <= nrow(locs))
+
+    return(list(nrows = nrows, row = row, newloc = newloc))
+
+} # get.gene.locations()
