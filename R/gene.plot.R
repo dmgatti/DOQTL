@@ -11,7 +11,7 @@
 #            ...: other arguments to be passed to plot.
 # Returns: data.frame with gene symbol, gene start, gene end, text start, 
 #          text end and row.
-gene.plot = function(mgi, rect.col = "grey", text.col = "black", ...) {
+gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
 
   # If we have no genes, just plot an empty frame and return.
   if(is.null(mgi) || nrow(mgi) == 0) {
@@ -102,8 +102,9 @@ gene.plot = function(mgi, rect.col = "grey", text.col = "black", ...) {
 
   # Plot the genes.
   rect(retval$newloc$left, retval$newloc$bottom, retval$newloc$right, 
-       retval$newloc$top, col = col, border = col)
-  text(retval$newloc$textx, retval$newloc$texty, retval$newloc$name, adj = c(0,0))
+       retval$newloc$top, col = rect.col, border = rect.col)
+  text(retval$newloc$textx, retval$newloc$texty, retval$newloc$name, 
+       col = text.col, adj = c(0,0))
 
   par(cex = previous.cex)
 
