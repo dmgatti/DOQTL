@@ -7,7 +7,7 @@
   Given a genomic region, plot the genes in the interval. line.up.genes and resolve.collisions are internal functions.
 }
 \usage{
-  gene.plot(mgi, col = "black", ...)
+  gene.plot(mgi, rect.col = "grey", text.col = "black", ...)
   line.up.genes(locs)
   resolve.collisions(locs) 
 }
@@ -15,8 +15,11 @@
   \item{mgi}{
     Data.frame with MGI gene locations as returned by \code{\link{get.mgi.features}{get.mgi.features}}.
   }
-  \item{col}{
-    Color vector that is the color to use to plot genes. May be a single color for all genes or a vector with colors for each gene.
+  \item{rect.col}{
+    Color vector that is the color to use to plot gene rectangles. May be a single color for all genes or a vector with colors for each gene.
+  }
+  \item{text.col}{
+    Color vector that is the color to use to plot gene names. May be a single color for all genes or a vector with colors for each gene.
   }
   \item{locs}{
     Data.frame containing the location and names of genes. Columns are symbol, gene start Mb, gene end Mb, transcript start Mb, transcript end Mb and row.
