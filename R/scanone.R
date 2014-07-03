@@ -126,10 +126,10 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
       # No covariates.
       if(missing(K)) {
         auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,auto], 
-                   K = K[keep,keep], snps = snps[auto,])
+                   snps = snps[auto,])
       } else {
         auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,auto], 
-                   snps = snps[auto,])
+                   K = K[keep,keep], snps = snps[auto,])
       } # else
 
     } else {
@@ -240,16 +240,18 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
         if(missing(K)) {
           x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
-                  addcovar = sex[keep, drop = FALSE], 
-                  snps = snps[xchr,,drop = FALSE])
+                  addcovar = sex[keep, drop = FALSE], snps = snps[xchr,,drop = FALSE])
         } else {
           x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
                   K = K[keep,keep], addcovar = sex[keep, drop = FALSE], 
                   snps = snps[xchr,,drop = FALSE])
         } # else
+
       } else {
+
         keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
         if(missing(intcovar)) {
+
           # Additive covariates only.
           if(missing(K)) {
             x.qtl = fast.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
