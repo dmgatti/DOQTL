@@ -731,15 +731,17 @@ assoc.plot = function(results,
         start = start, end = end, source = "MGI",
         type = "gene")
 
-  col = "black"
+  col = "grey"
+  textcol = "black"
 
   if(!missing(highlight)) {
-    col = rep("black", nrow(mgi))
+    textcol = rep("black", nrow(mgi))
     m = match(highlight, mgi$Name)
     col[m] = highlight.col
   } # if(!missing(highlight))
 
-  genes = gene.plot(mgi = mgi, col = col, xlim = usr[1:2])
+  genes = gene.plot(mgi = mgi, rect.col = col, text.col = textcol, 
+          xlim = usr[1:2])
 
   if(!missing(thr)) {
     return(results[points.ge.thr,])
