@@ -17,26 +17,44 @@ gene.plot = function(mgi, col = "black", ...) {
     plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
     return()
   } # if(is.null(mgi) || nrow(mgi) == 0)
-
+  
   previous.cex = par("cex")
   call = match.call(expand.dots = TRUE)
+  
+  # Convert the mgi gene start and stop locations to Mb.
+  if(all(mgi$start > 200)) {
+     mgi$start = mgi$start * 1e-6
+  } # if(all(mgi$start > 200))
 
-  m = which(names(call) == "xlim")
+  if(all(mgi$stop > 200)) {
+     mgi$stop = mgi$stop * 1e-6
+  } # if(all(mgi$stop > 200))
+  
+  # If we have xlim in the arguments, then make the plot using the user
+  # defined xlim and subset the mgi data to include only genes within the
+  # plot limits.
+  if(any(names(call) == "xlim")) {
 
-  if(length(m) > 0) {
+    xlim = eval(call$xlim, envir = parent.frame())
     plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
+    mgi = mgi[mgi$stop >= xlim[1] & mgi$start <= xlim[2],]
+
+    # If we have no genes to plot, just return.
+    if(nrow(mgi) == 0) {
+      return()
+    } # if(nrow(mgi) == 0)
   } else {
-    plot(0, 0, col = 0, xlim = c(min(mgi$start), max(mgi$stop)) * 1e-6,
+    plot(0, 0, col = 0, xlim = c(min(mgi$start), max(mgi$stop)),
          xlab = "", ylab = "", yaxt = "n", ...)
   } # else
   mtext(side = 1, line = 2, text = paste("Chr", mgi$seqid[1], "(Mb)"))
-
+  
   # Line the genes up sequentially in columns.
   # Locs holds the gene symbol, the gene start and end, the text start and end,
   # as well as the row to plot on.
-  locs = data.frame(name = mgi$Name, gstart = mgi$start * 1e-6,
-         gend = mgi$stop * 1e-6, tstart = mgi$stop * 1e-6 + strwidth("i"), 
-         tend = mgi$stop * 1e-6 + strwidth("i") + sapply(mgi$Name, strwidth))
+  locs = data.frame(name = mgi$Name, gstart = mgi$start,
+         gend = mgi$stop, tstart = mgi$stop + strwidth("i"), 
+         tend = mgi$stop + strwidth("i") + sapply(mgi$Name, strwidth))
   locs = locs[order(locs$gstart),]
   par(lend = 2)
 
@@ -47,7 +65,7 @@ gene.plot = function(mgi, col = "black", ...) {
   iter = 0  # Number of iterations.
 
   # We need at least enough rows in the plot to fit the data.
-  while((nrows < row | (usr[4] - ymin) / diff(usr[3:4]) < 0.5) & iter < 20) {
+  while((nrows < row | (usr[4] - ymin) / diff(usr[3:4]) < 0.5) & iter < 20) { 
 
     last.strht = strheight("I") 
     retval = get.gene.locations(locs, usr)
@@ -103,7 +121,7 @@ get.gene.locations = function(locs, usr) {
     nrows = floor(diff(usr[3:4]) / rowheight)
 
     row = 1
-    x = usr[1]
+    x = min(locs$gstart)
     tmp = locs # tmp is a sacrificial data frame from which we will remove plotted genes.
 
     # Try to fill in the genes without collisions.
@@ -139,7 +157,7 @@ get.gene.locations = function(locs, usr) {
         # row and reset the X position to the left edge of the plot (in user coordinates).
         if(x > usr[2]) {
           row = row + 1
-          x = usr[1]
+          x = min(locs$gstart)
         } # if(x > usr[2])
 
         # Increment the gene counter.
@@ -150,7 +168,7 @@ get.gene.locations = function(locs, usr) {
         # If we didn't find a gene past out current X position, advance to the next
         # row and reset the X position to the left edge of the plot (in user coordinates).
         row = row + 1
-        x = usr[1]
+        x = min(locs$gstart)
 
       } # else
 
