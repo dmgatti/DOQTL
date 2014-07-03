@@ -731,7 +731,7 @@ assoc.plot = function(results,
         start = start, end = end, source = "MGI",
         type = "gene")
 
-  col = "grey"
+  col = "grey30"
   textcol = "black"
 
   if(!missing(highlight)) {
