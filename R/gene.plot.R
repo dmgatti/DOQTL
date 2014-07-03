@@ -6,11 +6,12 @@
 ################################################################################
 # Arguments: mgi.file: data.frame, containing genes (or other features) as 
 #                      returned by get.mgi.features().
-#            col: color, the color of the gene rectangles.
+#            rect.col: color, the color of the gene rectangles.
+#            text.col: color, the color of the gene names.
 #            ...: other arguments to be passed to plot.
 # Returns: data.frame with gene symbol, gene start, gene end, text start, 
 #          text end and row.
-gene.plot = function(mgi, col = "black", ...) {
+gene.plot = function(mgi, rect.col = "grey", text.col = "black", ...) {
 
   # If we have no genes, just plot an empty frame and return.
   if(is.null(mgi) || nrow(mgi) == 0) {
