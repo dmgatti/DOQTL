@@ -55,7 +55,7 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
   # as well as the row to plot on.
   locs = data.frame(name = mgi$Name, gstart = mgi$start,
          gend = mgi$stop, tstart = mgi$stop + strwidth("i"), 
-         tend = mgi$stop + strwidth("i") + sapply(mgi$Name, strwidth))
+         tend = mgi$stop + strwidth("W") + sapply(mgi$Name, strwidth))
   locs = locs[order(locs$gstart),]
   par(lend = 2)
 
@@ -118,7 +118,7 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
 get.gene.locations = function(locs, usr) {
 
     boxheight = 1.1 * strheight("I")
-    offset = 0.1 * boxheight
+    offset = 0.15 * boxheight
     rowheight = boxheight + offset
     nrows = floor(diff(usr[3:4]) / rowheight)
 
