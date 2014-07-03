@@ -675,19 +675,23 @@ dohap2sanger = function(probs, snps, sdps) {
 assoc.plot = function(results, 
   mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz",
   highlight, highlight.col = "red", thr, ...) {
+
   old.par = par(no.readonly = TRUE)
+
   start = results$pos[1] * 1e-6
   end   = results$pos[nrow(results)] * 1e-6
+
   call = match.call()
+
   if("xlim" %in% names(call)) {
-     xlim = eval(call$xlim)
-print(xlim)
-     results = results[results[,2] >= xlim[1] * 1e6 & results[,2] <= xlim[2] * 1e6,]
-     if(any(xlim > 200)) {
+     xlim = eval(call$xlim, envir = parent.frame())
+	 if(any(xlim > 200)) {
        xlim = xlim * 1e-6
      } # if(xlim > 200)
+     results = results[results[,2] >= xlim[1] & results[,2] <= xlim[2],]
      call$xlim = xlim
   } # if("xlim" %in% names(call))
+
   type = "bic"
   if(colnames(results)[ncol(results)] == "LOD") {
     diff = results$LOD
@@ -698,17 +702,21 @@ print(xlim)
   } else {
     diff = results$BIC.full - results$BIC.red
   } # else
+
   # Color the points with statistic > thr in red.
   col = rep(1, nrow(results))
   if(!missing(thr)) {
     points.ge.thr = which(diff >= thr)
     col[points.ge.thr] = 2
   } # else
+
   layout(matrix(1:2, 2, 1), heights = c(0.4, 0.6))
   par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
-  plot(results$pos * 1e-6, diff, ann = FALSE, xaxt = "n", pch = 20, col = col, ...)
+  plot(results$pos * 1e-6, diff, ann = FALSE, xaxt = "n", pch = 20, 
+       col = col, ...)
   usr = par("usr")
   par(las = 3)
+
   txt = "BIC.full - BIC.reduced"
   if(type == "pv") {
     txt = "-log10(p-value)"
@@ -716,25 +724,35 @@ print(xlim)
     txt = "LOD"
   } # else
   mtext(side = 2, line = 3, text = txt)
+
   par(las = 1)
   par(plt = c(0.12, 0.99, 0.15, 1))
   mgi = get.mgi.features(file = mgi.file, chr = results[1,1],
         start = start, end = end, source = "MGI",
         type = "gene")
+
   col = "black"
+
   if(!missing(highlight)) {
     col = rep("black", nrow(mgi))
     m = match(highlight, mgi$Name)
     col[m] = highlight.col
   } # if(!missing(highlight))
+
   genes = gene.plot(mgi = mgi, col = col, xlim = usr[1:2])
+
   if(!missing(thr)) {
     return(results[points.ge.thr,])
   } else {
     return(results)
   } # else
   par(old.par)
+
 } # assoc.plot()
+
+
+
+
 # Plot specific SDP locations along a chromosome.
 # This idea is from Yalcin et.al., Genetics, 2005.
 # results: the data.frame output from merge.analysis().
