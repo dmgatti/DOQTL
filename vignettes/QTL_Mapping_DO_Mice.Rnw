@@ -132,7 +132,7 @@ Fifth, we run permutations to determine significane thresholds. We recommend run
 
 <<label=perms,results=hide>>=
 perms = scanone.perm(pheno = pheno, pheno.col = "HDW2", probs = model.probs, 
-        K = K, addcovar = covar, snps = muga_snps, nperm = 100)
+        addcovar = covar, snps = muga_snps, nperm = 100)
 thr = quantile(perms, probs = 0.95)
 @
 
