@@ -1,5 +1,5 @@
 scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
-               model = c("additive", "dominance", "full"), path = ".", nperm = 1000) {
+               model = c("additive", "full"), path = ".", nperm = 1000) {
 
   if(!missing(intcovar)) {
     stop("Interactive covariates not yet implemented")
