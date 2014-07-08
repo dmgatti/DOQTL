@@ -5,8 +5,8 @@
   This function is the main QTL mapping function for point mapping at each marker. The user must supply phenotypes, genotype probabilities and marker locations. Optional kinship, additive and interactive covariates may be passed in. scanone.perm regresses the phenotype on the genotype probabilities and produces a LOD score and founder allele effects at each marker.
 }
 \usage{
-  scanone.perm(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, model = 
-  c("additive", "dominance", "full"), path = ".", nperm = 1000)
+  scanone.perm(pheno, pheno.col = 1, probs, addcovar, intcovar, snps, model = 
+  c("additive", "full"), path = ".", nperm = 1000)
 }
 \arguments{
   \item{pheno}{
@@ -18,9 +18,6 @@
   \item{probs}{
     3D numeric array, containing the founder haplotype contributions or genotype probabilities. The sample IDs, founder letter codes and markers IDs must be in dimnames.
   }
-  \item{K}{
-    numeric matrix, containing the additive kinship matrix. The samples IDs must be in rownames and colnames.
-  }
   \item{addcovar}{
     data.frame or numeric matrix, containing any additive covariates. Sample IDs must be in rownames.
   }
@@ -31,7 +28,7 @@
     data.frame containing 4 columns with marker location information. SNP ID, chr, Mb, cM in columns 1 through 4, respectively.
   }
   \item{model}{
-    Character string, containing one of "additive", "dominance" or "full", indicating the type of model to fit.
+    Character string, containing one of "additive" or "full", indicating the type of model to fit.
   }
   \item{path}{
     Character string containing the location where permutation results should be written.
