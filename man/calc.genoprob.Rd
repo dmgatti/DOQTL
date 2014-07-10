@@ -79,8 +79,8 @@
 }
 \examples{
   \dontrun{
-    calc.genoprob(cross, chr.to.run = 1:19, output.dir = "do.data", plot = FALSE, init.means = NULL, 
-	init.covars = NULL)
+    calc.genoprob(cross, chr.to.run = 1:19, output.dir = "do.data", plot = FALSE, 
+	init.means = NULL, init.covars = NULL)
   }
 }
 \keyword{ MUGA }

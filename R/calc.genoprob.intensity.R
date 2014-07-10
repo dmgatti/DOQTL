@@ -203,16 +203,16 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
       d = d[!is.na(d[1,]), !is.na(d[,1])]
 
       # Cluster using PAM.
-      cl = pam(x = d, k = length(founders$states$founders), diss = TRUE)
+#      cl = pam(x = d, k = length(founders$states$founders), diss = TRUE)
   
       # Calculate means and covariances for each cluster.
-      mean.covar = as.list(1:length(founders$states$founders))
-      names(mean.covar) = founders$states$founders
-      for(i in 1:length(founders$states$founders)) {
-        rng = which(cl$clustering == i)
-        mean.covar[[i]]$mean = cbind(rowMeans(x[,rng]), rowMeans(y[,rng]))
-        mean.covar[[i]]$covar = cov(t(x[,rng]), t(y[,rng]))
-      } # for(i)
+#      mean.covar = as.list(1:length(founders$states$founders))
+#      names(mean.covar) = founders$states$founders
+#      for(i in 1:length(founders$states$founders)) {
+#        rng = which(cl$clustering == i)
+#        mean.covar[[i]]$mean = cbind(rowMeans(x[,rng]), rowMeans(y[,rng]))
+#        mean.covar[[i]]$covar = cov(t(x[,rng]), t(y[,rng]))
+#      } # for(i)
       
       
 
