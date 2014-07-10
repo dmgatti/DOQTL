@@ -5,8 +5,8 @@
   Given a DOQTL object, plot the founder allele coefficients on one chromosome. The coefficients are centered around zero before plotting.
 }
 \usage{
-  coefplot(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend = TRUE, colors = "DO", 
-  sex, ...)
+  coefplot(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend = TRUE, 
+  colors = "DO", sex, ...)
 }
 \arguments{
   \item{doqtl}{

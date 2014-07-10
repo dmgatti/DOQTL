@@ -7,7 +7,7 @@
   Given a DOQTL object, create an HTML page that reports the QTL and creates QTL plots. Permutations for assessing significance thresholds can be supplied.
 }
 \usage{
-  create.html.page(path, qtl, pheno.name, perms)
+  create.html.page(path, qtl, pheno.name, perms, assoc)
 }
 \arguments{
   \item{path}{
@@ -21,6 +21,9 @@
   }
   \item{perms}{
     Numeric vector containing the permutation LOD scores for this phenotype.
+  }
+  \item{assoc}{
+    Boolean, if TRUE, look for corresponding *.Rdata files containing the names of the qtl in the current working directory and plot the association plots. If FALSE (default), do not plot association analysis.
   }
 }
 \details{

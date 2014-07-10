@@ -7,7 +7,7 @@
   Given a list of QTL objects, create a set of HTML pages summarizing the QTL.
 }
 \usage{
-  html.report(path, qtl, perms, merge = FALSE)
+  html.report(path, qtl, perms, assoc = FALSE)
 }
 \arguments{
   \item{path}{
@@ -19,8 +19,8 @@
   \item{perms}{
     Numeric vector containing permutation results for the phenotypes.
   }
-  \item{merge}{
-    boolean, if true, look for corresponding *.Rdata files containing the names of the qtl in the current working directory and plot the merge plots. If false (default), do not plot merge analysis.
+  \item{assoc}{
+    Boolean, if TRUE, look for corresponding *.Rdata files containing the names of the qtl in the current working directory and plot the association plots. If FALSE (default), do not plot association mapping analysis.
   }
 }
 \details{
