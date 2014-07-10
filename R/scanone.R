@@ -179,8 +179,6 @@ synch.sample.IDs = function(vars) {
 
 scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model) {
 
-print("In scanone.noK()")
-
   num.auto = get.num.auto(snps)
 
   xchr = which(snps[,2] %in% "X")
@@ -365,8 +363,6 @@ print("In scanone.noK()")
 ################################################################################
 scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, model) {
 
-print("In scanone.K()")
-
   num.auto = get.num.auto(snps)
 
   xchr = which(snps[,2] %in% "X")
@@ -549,8 +545,6 @@ print("In scanone.K()")
 
 ################################################################################
 scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, model) {
-
-print("In scanone.LOCO()")
 
   num.auto = get.num.auto(snps)
 
