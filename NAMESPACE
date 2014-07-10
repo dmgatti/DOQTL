@@ -16,6 +16,7 @@ import( annotate,
         annotationTools,
 		biomaRt, 
 		Biobase,
+		BiocGenerics,
 		corpcor,
 		GenomicRanges,
 		hwriter,
@@ -24,7 +25,8 @@ import( annotate,
 		org.Hs.eg.db,
 		org.Mm.eg.db,
 		QTLRel,
-		Rsamtools, 
+		Rsamtools,
+        RUnit,
 		XML )
 
 importFrom(mclust, Mclust, mclustBIC, priorControl)
