@@ -6,7 +6,7 @@
 }
 \usage{
   scanone(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, model = 
-  c("additive", "dominance", "full"))
+  c("additive", "full"))
 }
 \arguments{
   \item{pheno}{
@@ -31,7 +31,7 @@
     data.frame containing 4 columns with marker location information. SNP ID, chr, Mb, cM in columns 1 through 4, respectively.
   }
   \item{model}{
-    character string, containing one of "additive", "dominance" or "full", indicating the type of model to fit.
+    character string, containing one of "additive" or "full", indicating the type of model to fit.
   }
 }
 \value{
