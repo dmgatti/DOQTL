@@ -247,3 +247,107 @@ test_qtl_with_kinship_with_covar = function() {
 } # test_qtl_with_kinship_with_covar()
 
 
+test_qtlrel_vs_fastqtl = function() {
+  library(MUGAExampleData)
+  library(QTLRel)
+
+  # Load in phenotype and genotype data.
+  data(pheno)
+  data(model.probs)
+  probs = model.probs
+
+  # Load in SNPs.
+  load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
+
+  snps = muga_snps[muga_snps[,2] == 1,]
+  rm(muga_snps)
+  snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+  probs = probs[,,snps[,1]]
+  covar = matrix(as.numeric(c(pheno$Sex == "M", pheno$Diet == "hf")),
+          ncol = 2, dimnames = list(rownames(pheno), c("sex", "diet")))
+  K = kinship.probs(probs = probs, snps = snps, bychr = FALSE)
+
+  pheno.name = "WBC1"
+
+  pheno = pheno[!is.na(pheno[,pheno.name]),]
+  pheno = pheno[rownames(pheno) %in% rownames(probs),]
+  probs = probs[rownames(probs) %in% rownames(pheno),,]
+  probs = probs[rownames(pheno),,]
+  covar = covar[rownames(pheno),]
+  K = K[rownames(pheno), rownames(pheno)]
+  stopifnot(all(rownames(pheno) == rownames(probs)))
+  stopifnot(all(rownames(pheno) == rownames(K)))
+  stopifnot(all(rownames(pheno) == rownames(covar)))
+
+  qt = qtl.qtlrel(pheno = pheno[,pheno.name], probs = probs, 
+                  K = K, addcovar = covar, snps = snps)
+  fq = fast.qtlrel(pheno = pheno[,pheno.name], probs = probs, 
+                  K = K, addcovar = covar, snps = snps)
+
+  checkEqualsNumeric(target = qt$lod[,7], current = fq$lod[,7],
+                     tolerance = 1e-7)
+  checkEqualsNumeric(target = qt$coef, current = fq$coef, tolerance = 1e-7)
+
+} # test_qtlrel_vs_fastqtl()
+
+
+test_qtlrel_vs_matrixqtl = function() {
+  library(MUGAExampleData)
+  library(QTLRel)
+
+  # Load in phenotype and genotype data.
+  data(pheno)
+  data(model.probs)
+  probs = model.probs
+
+  # Load in SNPs.
+  load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
+
+  snps = muga_snps[muga_snps[,2] == 1,]
+  rm(muga_snps)
+  snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+  probs = probs[,,snps[,1]]
+  covar = matrix(as.numeric(c(pheno$Sex == "M", pheno$Diet == "hf")),
+          ncol = 2, dimnames = list(rownames(pheno), c("sex", "diet")))
+  K = kinship.probs(probs = probs, snps = snps, bychr = FALSE)
+
+  pheno.name = "WBC1"
+
+  pheno = pheno[!is.na(pheno[,pheno.name]),]
+  pheno = pheno[rownames(pheno) %in% rownames(probs),]
+  probs = probs[rownames(probs) %in% rownames(pheno),,]
+  probs = probs[rownames(pheno),,]
+  covar = covar[rownames(pheno),]
+  K = K[rownames(pheno), rownames(pheno)]
+  stopifnot(all(rownames(pheno) == rownames(probs)))
+  stopifnot(all(rownames(pheno) == rownames(K)))
+  stopifnot(all(rownames(pheno) == rownames(covar)))
+
+  qt = qtl.qtlrel(pheno = pheno[,pheno.name], probs = probs, 
+                  K = K, addcovar = covar, snps = snps)
+
+  # Estimate variance components and create correction matrix.
+  prdat = list(pr = probs, chr = snps[,2], dist = snps[,3],
+               snp = snps[,1])
+  vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
+              EE = diag(nrow(pheno)))
+  vc = estVC(y = pheno[,pheno.name], x = covar, v = vTmp)
+  corrMat = vc$par["AA"] * vTmp$AA + vc$par["EE"] * vTmp$EE
+  rm(vc, vTmp, prdat)
+  eig = eigen(corrMat, symmetric = TRUE)
+  if(any(eig$values <= 0)) {
+     stop("The covariance matrix is not positive definite")
+  } # if(any(eig$values <= 0))
+  corrMat = eig$vectors %*% diag(1.0 / sqrt(eig$values)) %*% t(eig$vectors)
+  dimnames(corrMat) = list(rownames(pheno), rownames(pheno))
+
+  fq = scanone.eqtl(expr = pheno[,pheno.name,drop = FALSE], probs = probs, 
+                  K = corrMat, addcovar = covar, snps = snps)
+
+  checkEqualsNumeric(target = qt$lod[,7], current = fq[,1],
+                     tolerance = 1e-7)
+
+} # test_qtlrel_vs_matrixqtl()
+
+
+
