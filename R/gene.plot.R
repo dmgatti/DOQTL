@@ -21,6 +21,7 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
   
   previous.cex = par("cex")
   call = match.call(expand.dots = TRUE)
+  mgi$Name = as.character(mgi$Name)
   
   # Convert the mgi gene start and stop locations to Mb.
   if(all(mgi$start > 200)) {
@@ -30,6 +31,19 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
   if(all(mgi$stop > 200)) {
      mgi$stop = mgi$stop * 1e-6
   } # if(all(mgi$stop > 200))
+
+  # Place names on the colors so that we can keep track of which
+  # colors are associated with which genes. Also, expand them if they are
+  # shorter than nrow(mgi).
+  if(length(rect.col) < nrow(mgi)) {
+    rect.col = rep(rect.col, ceiling(nrow(mgi) / length(rect.col)))[1:nrow(mgi)]
+  } # if(length(rect.col) < nrow(mgi))
+  names(rect.col) = mgi$Name
+
+  if(length(text.col) < nrow(mgi)) {
+    text.col = rep(text.col, ceiling(nrow(mgi) / length(text.col)))[1:nrow(mgi)]
+  } # if(length(text.col) < nrow(mgi))
+  names(text.col) = mgi$Name
   
   # If we have xlim in the arguments, then make the plot using the user
   # defined xlim and subset the mgi data to include only genes within the
@@ -49,13 +63,14 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
          xlab = "", ylab = "", yaxt = "n", ...)
   } # else
   mtext(side = 1, line = 2, text = paste("Chr", mgi$seqid[1], "(Mb)"))
-  
+
   # Line the genes up sequentially in columns.
   # Locs holds the gene symbol, the gene start and end, the text start and end,
   # as well as the row to plot on.
   locs = data.frame(name = mgi$Name, gstart = mgi$start,
          gend = mgi$stop, tstart = mgi$stop + strwidth("i"), 
-         tend = mgi$stop + strwidth("W") + sapply(mgi$Name, strwidth))
+         tend = mgi$stop + strwidth("W") + sapply(mgi$Name, strwidth),
+         stringsAsFactors = F)
   locs = locs[order(locs$gstart),]
   par(lend = 2)
 
@@ -102,10 +117,11 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
 
   # Plot the genes.
   rect(retval$newloc$left, retval$newloc$bottom, retval$newloc$right, 
-       retval$newloc$top, col = rect.col, border = rect.col)
+       retval$newloc$top, col = rect.col[retval$newloc$name],
+       border = rect.col[retval$newloc$name])  
   text(retval$newloc$textx, retval$newloc$texty, retval$newloc$name, 
-       col = text.col, adj = c(0,0))
-
+       col = text.col[retval$newloc$name], adj = c(0,0))
+  
   par(cex = previous.cex)
 
   return(locs)
@@ -130,7 +146,8 @@ get.gene.locations = function(locs, usr) {
     # newloc holds the positions of the gene rectangles and names in user coordiantes.
     newloc = data.frame(name = rep("", nrow(locs)), left = rep(0, nrow(locs)), 
              bottom = rep(0, nrow(locs)), right = rep(0, nrow(locs)), 
-             top = rep(0, nrow(locs)), textx = rep(0, nrow(locs)), texty = rep(0, nrow(locs)))
+             top = rep(0, nrow(locs)), textx = rep(0, nrow(locs)), 
+             texty = rep(0, nrow(locs)), stringsAsFactors = F)
 
     i = 1    # Gene counter.
     while(i <= nrow(locs)) {
