@@ -455,6 +455,8 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
   } # else if(output == "lod")
   
 } # assoc.scan1
+
+
 ##########
 # Scan one permutations. 
 assoc.scan1.perms = function(pheno, pheno.col, probs, K, addcovar,
@@ -589,6 +591,8 @@ stop("Return a matrix of LOD scores")
            sdp = sdps, LOD = stat))
   } 
 } # assoc.scan2
+
+
 ###
 # Map Sanger SNPs onto DO genomes, given the 8 founder haplotyep contributions.
 # Arguments: probs: 3D array of founder haplotype contributions. num.samples x
@@ -662,6 +666,9 @@ dohap2sanger = function(probs, snps, sdps) {
   allele.probs = allele.probs[,1:probs.index]
   return(list(map = map, allele.probs = allele.probs))
 } # dohap2sanger()
+
+
+
 ###
 # Plot for one-way merge analysis scan.
 # Arguments: results: data.frame from assoc.map.
@@ -677,9 +684,13 @@ assoc.plot = function(results,
   highlight, highlight.col = "red", thr, ...) {
 
   old.par = par(no.readonly = TRUE)
-
-  start = results$pos[1] * 1e-6
-  end   = results$pos[nrow(results)] * 1e-6
+    
+  if(any(results$pos > 200)) {
+    results$pos = results$pos * 1e-6
+  } # if(any(results$pos > 200))
+  
+  start = results$pos[1]
+  end   = results$pos[nrow(results)]
 
   call = match.call()
 
@@ -712,7 +723,7 @@ assoc.plot = function(results,
 
   layout(matrix(1:2, 2, 1), heights = c(0.4, 0.6))
   par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
-  plot(results$pos * 1e-6, diff, ann = FALSE, xaxt = "n", pch = 20, 
+  plot(results$pos, diff, ann = FALSE, xaxt = "n", pch = 20, 
        col = col, ...)
   usr = par("usr")
   par(las = 3)
