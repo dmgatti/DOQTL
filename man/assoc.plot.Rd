@@ -33,6 +33,8 @@
 }
 \details{
   Given the output from \code{\link{assoc.map}}, plot the LOD or difference in BIC values across the QTL interval in the top panel. Plot the genes in the interval in the lower panel. 
+  For the threshold, you may consider using max(results[,12] - 1.5) for a 1.5 LOD drop around the maximim LOD score.
+  Make sure to use Sanger SNP and MGI feature files that are on the same genome build.
 }
 \value{
   A plot with the mapping statistic in the top panel and genes in the lower panel.
