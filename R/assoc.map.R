@@ -742,13 +742,15 @@ assoc.plot = function(results,
         start = start, end = end, source = "MGI",
         type = "gene")
 
-  col = "grey30"
+  col     = "grey30"
   textcol = "black"
 
   if(!missing(highlight)) {
-    textcol = rep("black", nrow(mgi))
+    col = rep(col, nrow(mgi))
+    textcol = rep(textcol, nrow(mgi))
     m = match(highlight, mgi$Name)
     col[m] = highlight.col
+    textcol[m] = highlight.col
   } # if(!missing(highlight))
 
   genes = gene.plot(mgi = mgi, rect.col = col, text.col = textcol, 
