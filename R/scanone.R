@@ -201,6 +201,12 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
       sex = pheno[,sex.col]
     } # else
     sex = toupper(sex)
+    # This takes care of the case where "F" gets turned into "FALSE",
+    # by R.
+    wh = which(sex == "FALSE")
+    if(length(wh) > 0) {
+      sex[wh] = "F"
+    } # if(is.logical(sex))
     names(sex) = rownames(pheno)
 
   } # if(length(xchr) > 0)
@@ -385,6 +391,12 @@ scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, m
       sex = pheno[,sex.col]
     } # else
     sex = toupper(sex)
+    # This takes care of the case where "F" gets turned into "FALSE",
+    # by R.
+    wh = which(sex == "FALSE")
+    if(length(wh) > 0) {
+      sex[wh] = "F"
+    } # if(is.logical(sex))
     names(sex) = rownames(pheno)
 
   } # if(length(xchr) > 0)
@@ -568,6 +580,12 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
       sex = pheno[,sex.col]
     } # else
     sex = toupper(sex)
+    # This takes care of the case where "F" gets turned into "FALSE",
+    # by R.
+    wh = which(sex == "FALSE")
+    if(length(wh) > 0) {
+      sex[wh] = "F"
+    } # if(is.logical(sex))
     names(sex) = rownames(pheno)
 
   } # if(length(xchr) > 0)
@@ -584,20 +602,20 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
     keep = which(!is.na(p) & !is.nan(p) & !is.infinite(p))
 
     # Autosomes
-    auto = which(snps[,2] %in% 1:num.auto)
-
     if(missing(addcovar)) {
 
       # No covariates.
       snprng = which(snps[,2] == 1)
-      auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,snprng], 
+      auto.qtl = fast.qtlrel(pheno = p[keep, drop = FALSE], 
+                 probs = probs[keep,,snprng], 
                  K = K[[1]][keep,keep], snps = snps[snprng,])
       for(c in 2:num.auto) {
         snprng = which(snps[,2] == c)
-        tmp = fast.qtlrel(pheno = p[keep], probs = probs[keep,,snprng], 
+        tmp = fast.qtlrel(pheno = p[keep, drop = FALSE],
+              probs = probs[keep,,snprng], 
               K = K[[c]][keep,keep], snps = snps[snprng,])
-        auto.qtl$lod$A  = rbind(auto.qtl$lod$A, tmp$lod$A)
-        auto.qtl$coef$A = rbind(auto.qtl$coef$A, tmp$coef$A)
+        auto.qtl$lod  = rbind(auto.qtl$lod, tmp$lod)
+        auto.qtl$coef = rbind(auto.qtl$coef, tmp$coef)
       } # for(c)
 
     } else {
@@ -616,33 +634,35 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
 
         for(c in 2:num.auto) {
           snprng = which(snps[,2] == c)
-          tmp = fast.qtlrel(pheno = p[keep], probs = probs[keep,,snprng], 
+          tmp = fast.qtlrel(pheno = p[keep, drop = FALSE], probs = probs[keep,,snprng], 
                 K = K[[c]][keep,keep], addcovar = addcovar[keep,,drop = FALSE],
                 snps = snps[snprng,])
-          auto.qtl$lod$A  = rbind(auto.qtl$lod$A, tmp$lod$A)
-          auto.qtl$coef$A = rbind(auto.qtl$coef$A, tmp$coef$A)
+          auto.qtl$lod  = rbind(auto.qtl$lod,  tmp$lod)
+          auto.qtl$coef = rbind(auto.qtl$coef, tmp$coef)
         } # for(c)
 
       } else {
 
         # Additive and interactive covariates.
         snprng = which(snps[,2] == 1)
-        auto.qtl = qtl.qtlrel(pheno = p[keep], probs = probs[keep,,snprng],
-                   K = K[[1]][keep,keep], addcovar = addcovar[keep,,drop = FALSE], 
+        auto.qtl = qtl.qtlrel(pheno = p[keep, drop = FALSE], 
+                   probs = probs[keep,,snprng], K = K[[1]][keep,keep], 
+                   addcovar = addcovar[keep,,drop = FALSE], 
                    intcovar = intcovar[keep,,drop = FALSE], snps = snps[snprng,])
         for(c in 2:num.auto) {
           snprng = which(snps[,2] == c)
-          tmp = qtl.qtlrel(pheno = p[keep], probs = probs[keep,,snprng],
-                K = K[[c]][keep,keep], addcovar = addcovar[keep,,drop = FALSE], 
+          tmp = qtl.qtlrel(pheno = p[keep, drop = FALSE],
+                probs = probs[keep,,snprng], K = K[[c]][keep,keep], 
+                addcovar = addcovar[keep,,drop = FALSE], 
                 intcovar = intcovar[keep,,drop = FALSE], snps = snps[snprng,])
-          auto.qtl$lod$A  = rbind(auto.qtl$lod$A, tmp$lod$A)
-          auto.qtl$coef$A = rbind(auto.qtl$coef$A, tmp$coef$A)
+          auto.qtl$lod  = rbind(auto.qtl$lod,  tmp$lod)
+          auto.qtl$coef = rbind(auto.qtl$coef, tmp$coef)
         } # for(c)
 
       } # else
     } # else
 
-    auto.qtl = list(lod = list(A = auto.qtl$lod), 
+    auto.qtl = list(lod  = list(A = auto.qtl$lod), 
                     coef = list(A = auto.qtl$coef))
 
     # X chromosome.
