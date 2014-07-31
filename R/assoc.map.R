@@ -32,6 +32,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
                  chr, start, end, model = c("additive", "dominance", "full"),
                  scan = c("one", "two"), output = c("lod", "p-value", "bic"),
                  snp.file = "ftp://ftp.jax.org/SNPtools/variants/cc.snps.NCBI38.txt.gz") {
+
   scan  = match.arg(scan)
   model = match.arg(model)
   output = match.arg(output)
@@ -61,6 +62,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(missing(chr)) {
     stop("The QTL chromosome must be specified.")
   } # if(missing(chr))
+
   if(missing(start)) {
     stop("The QTL start position must be specified.")
   } # if(missing(start))
@@ -68,6 +70,18 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(missing(end)) {
     stop("The QTL end position must be specified.")
   } # if(missing(end))
+
+  if(start < 0) {
+    stop(paste("assoc.map: start =", start, ". Start cannot be less than zero."))
+  } # if(start < 0)
+
+  if(end < 0) {
+    stop(paste("assoc.map: end =", end, ". End cannot be less than zero."))
+  } # if(end < 0)
+
+  if(end < start) {
+    stop(paste("assoc.map: end must be greater than start."))
+  } # if(end < start)
   
   # Subset all of the data to only contain the samples in common.
   pheno = pheno[!is.na(pheno[,pheno.col]),,drop = FALSE]
@@ -132,11 +146,17 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   } # if(end <= 200)
   
   # Expand the start and end to the nearest markers.
-  snps = snps[snps[,2] == chr,]
+  snps = snps[snps[,2] == chr,,drop = FALSE]
   snps = snps[intersect(which(snps[,3] >= start * 1e-6) - 1,
-                        which(snps[,3] <= end   * 1e-6) + 1),]
-  probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
-  snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+                        which(snps[,3] <= end   * 1e-6) + 1),,drop = FALSE]
+
+  # If we have no SNPs in this interval, then return NULL.
+  if(nrow(snps) == 0) {
+    return(NULL)
+  } # if(nrow(snps) == 0)
+
+  probs = probs[,,dimnames(probs)[[3]] %in% snps[,1],drop = FALSE]
+  snps = snps[snps[,1] %in% dimnames(probs)[[3]],,drop = FALSE]
   
   gr = GRanges(seqnames = chr, ranges = IRanges(start = start, end = end))
   print("Retrieving SNPs...")
@@ -204,6 +224,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   
   sanger = sanger[,m]
   rownames(sanger) = pos
+
   # Get the SDPs (this is DO/CC specific).
   # Get the SDPs by treating the SNP patterns as binary numbers.
   vec = 2^((ncol(sanger)-1):0)
@@ -387,8 +408,10 @@ assoc.map.perms = function(pheno, pheno.col = 1, probs, addcovar, snps,
 # passed in by the user.
 assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps, 
               snps, model, output) {
+
   # Get the error covariance matrix from QTLRel.
   err.cov = diag(nrow(pheno))
+
   if(!missing(K)) {
     vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
                 EE = diag(nrow(pheno)))
@@ -399,6 +422,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
     } # for(j)
     rm(vTmp)
   } # if(!missing(K))
+
   BIC.full = NULL
   if(output == "bic") {
     # Get the SS.full (8 founder state).
@@ -413,6 +437,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
     BIC.full = -2 * qtl.full$lod$A$lod + (ncol(addcovar) +  dim(probs)[[2]]) * 
                log(nrow(pheno))
   } # if(output == "bic")
+
   # Convert the DO haplotype probabilities to Sanger alleles.
   unique.geno = dohap2sanger(probs, snps, sdps)
   keep = which(!is.na(pheno[,pheno.col]))
@@ -435,6 +460,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
             geno = unique.geno$allele.probs[keep,])
     } # else
   } # else
+
   if(output == "bic") {
     BIC.reduced = -2 * lrs + (ncol(addcovar) + 3) * log(nrow(pheno))
     stat = BIC.reduced[unique.geno$map]
@@ -601,22 +627,38 @@ stop("Return a matrix of LOD scores")
 #                  SNP ID, chr, Mb and cM in columns 1:4.
 #            sdps: data.frame containing bp, SDP and Sanger SNPs.
 dohap2sanger = function(probs, snps, sdps) {
+
+  if(any(diff(snps[,3]) < 0)) {
+    neg = which(diff(snps[,3]) < 0)
+    stop(paste("At least one pair of SNP locations has decreasing consecutive values.",
+	     snps[,neg,]))
+  } # if(any(diff(snps[,3]) < 0))
+
   # Get mean haplotype contributions between each pair of markers.
-  mean.haps = sapply(1:(dim(probs)[3] - 1), function(z) { 
-                0.5 * (probs[,,z] + probs[,,z+1])
-              })
+  mean.haps = NULL
+  if(dim(probs)[3] > 1) {
+    mean.haps = sapply(1:(dim(probs)[3] - 1), function(z) { 
+                  0.5 * (probs[,,z] + probs[,,z+1])
+                })
+  } else {
+    mean.haps = probs
+  } # else
   mean.haps = array(mean.haps, c(dim(probs)[1], dim(probs)[2], dim(probs)[3] - 1))
+
   # Create bp position, SDPs and a numeric matrix of sanger SNPs.
   pos = sdps[,1]
   sanger = as.matrix(sdps[,-1:-2])
   sdps = sdps[,2]
   snps[,3] = snps[,3] * 1e6
+
   # Function to take the Sanger SNPs, a range, and return unique SDPs
   # and a map from the Sanger SNPs to the SDPs.
-  map.fxn = function(start, end, haps) {
+  map.fxn = function(pos, start, end, haps, sanger) {
+
               rng = which(pos >= start & pos < end)
               map = NULL
               allele.probs = NULL
+
               if(length(rng) > 0) {
                 sdp.rng = which(!duplicated(sdps[rng]))
                 unique.sdp = sdps[rng][sdp.rng]
@@ -624,8 +666,11 @@ dohap2sanger = function(probs, snps, sdps) {
                 map = match(sdps[rng], unique.sdp)
                 allele.probs = tcrossprod(haps, unique.sanger)                
               } # if(length(rng) > 0)
+
               return(list(map = map, allele.probs = allele.probs))
+
             } # function()
+
   # Create space for the unique SDPs and alleles that is 10 times smaller
   # than the total number of Sanger SNPs.
   map = rep(NA, length(sdps))
@@ -633,9 +678,10 @@ dohap2sanger = function(probs, snps, sdps) {
                  list(dimnames(probs)[[1]], NULL))
   map.index   = 1
   probs.index = 1
+
   # Process positions before the first marker.
   if(pos[1] < snps[1,3]) {
-    tmp = map.fxn(pos[1], snps[1,3], probs[,,1])
+    tmp = map.fxn(pos, pos[1], snps[1,3], probs[,,1], sanger)
     if(length(tmp$map) > 0) {
       map[map.index:(map.index + length(tmp$map) - 1)] = tmp$map + probs.index - 1
       allele.probs[,probs.index:(probs.index + ncol(tmp$allele.probs) - 1)] = tmp$allele.probs
@@ -643,9 +689,10 @@ dohap2sanger = function(probs, snps, sdps) {
       probs.index = probs.index + ncol(tmp$allele.probs)
     } # if(length(tmp$map) > 0)
   } # if(pos[1] < snps[1,3])
+
   # Process positions between markers.
   for(i in 1:(nrow(snps)-1)) {
-    tmp = map.fxn(snps[i,3], snps[i+1,3], mean.haps[,,i])
+    tmp = map.fxn(pos, snps[i,3], snps[i+1,3], mean.haps[,,i], sanger)
     if(length(tmp$map) > 0) {
       map[map.index:(map.index + length(tmp$map) - 1)] = tmp$map + probs.index - 1
       allele.probs[,probs.index:(probs.index + ncol(tmp$allele.probs) - 1)] = tmp$allele.probs
@@ -653,9 +700,11 @@ dohap2sanger = function(probs, snps, sdps) {
       probs.index = probs.index + ncol(tmp$allele.probs)
     } # if(length(tmp$map) > 0)
   } # for(i)
+
   # Process positions past the last marker.
   if(pos[length(pos)] > snps[nrow(snps),3]) {
-    tmp = map.fxn(snps[nrow(snps),3], pos[length(pos)]+1, probs[,,dim(probs)[3]])
+    tmp = map.fxn(pos, snps[nrow(snps),3], pos[length(pos)]+1, probs[,,dim(probs)[3]], 
+                  sanger)
     if(length(tmp$map) > 0) {
       map[map.index:(map.index + length(tmp$map) - 1)] = tmp$map + probs.index - 1
       allele.probs[,probs.index:(probs.index + ncol(tmp$allele.probs) - 1)] = tmp$allele.probs
@@ -663,8 +712,11 @@ dohap2sanger = function(probs, snps, sdps) {
       probs.index = probs.index + ncol(tmp$allele.probs)
     } # if(length(tmp$map) > 0)
   } # if(pos[1] < snps[1,3])
+
   allele.probs = allele.probs[,1:probs.index]
+
   return(list(map = map, allele.probs = allele.probs))
+
 } # dohap2sanger()
 
 
