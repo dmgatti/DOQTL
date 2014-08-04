@@ -165,7 +165,7 @@ coefplot(qtl, chr = 9)
 @
 \end{center}
 \caption{Coefficient plot of HDW2 on Chr 9. The top panel shows the 8 estimated founder allele effects along Chr 9. The NOD/ShiLtJ allele contributes to high values and the A/J and PWK/PhJ alleles contribute to low values. The bottom panel shows the LOD score.}
-\label{fig:coefplot}
+\label{fig:qtlplot}
 \end{figure}
 
 Note that the DO mice with alleles from three strains, 129S1/SvImJ, NZO/HlLtJ and WSB/EiJ,
@@ -183,28 +183,23 @@ The QTL support interval is 4.7 Mb wide.
 \vspace{5 mm}
 Finally, we narrow the candidate gene list by imputing the founder SNPs onto the DO genomes. This idea is essentially \href{http://www.ncbi.nlm.nih.gov/pubmed/22847376}{assocation mapping} in an outbred population.
 
-<<label=assocplot,include=FALSE>>=
+<<label=mergeplot,include=FALSE>>=
 ma = assoc.map(pheno = pheno, pheno.col = "HDW2", probs = model.probs, K = K,
                     addcovar = covar, snps = muga_snps, chr = interval[1,2], 
                     start = interval[1,3], end = interval[3,3])
 tmp = assoc.plot(ma, thr = 4)
+unique(tmp$sdps)
 @
 
 \begin{figure}
 \begin{center}
 <<label=fig3,fig=TRUE,echo=FALSE>>=
-<<assocplot>>
+<<mergeplot>>
 @
 \end{center}
 \caption{Association mapping plot of HDW2 in the Chr 9 support interval. The top panel shows the LOD score from assocation mapping (Eqn. 3) in the QTL support interval. The bottom panel shows the genes and non-coding RNAs from the \href{http://informatics.jax.org/}{Mouse Genome Informatics} database.}
-\label{fig:assocplot}
+\label{fig:qtlplot}
 \end{figure}
-
-We can also see how many unique SNP patterns are contained by the SNPs with LODs above 4.
-
-<<label=uniquesdps,include=FALSE>>=
-tmp[!duplicated(tmp$sdps),]
-@
 
 We can get the genes in the QTL interval using the \texttt{get.mgi.features()} function.
 
@@ -216,5 +211,11 @@ head(mgi)
 @
 
 There are 169 genes in the QTL support interval. Several SNPs have LOD scores above 4. This is a somewhat arbitrary cutoff and an appropriate threshold will be supplied in future version of DOQTL. In this case, there may be more than one variant that influences the phenotype.
+
+\section{SessionInfo}
+
+<<label=sessionInfo>>=
+sessionInfo()
+@
 
 \end{document}
