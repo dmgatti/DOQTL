@@ -230,6 +230,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   vec = 2^((ncol(sanger)-1):0)
   sdps = tcrossprod(vec, sanger)[1,]
   sdps = data.frame(pos = as.numeric(pos), sdps, sanger)
+
   print("Calculating mapping statistic")
   retval = NULL
   if(scan == "one") {
@@ -439,7 +440,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
   } # if(output == "bic")
 
   # Convert the DO haplotype probabilities to Sanger alleles.
-  unique.geno = dohap2sanger(probs, snps, sdps)
+  unique.geno = dohap2sanger.internal(probs, snps, sdps)
   keep = which(!is.na(pheno[,pheno.col]))
   if(!missing(addcovar)) {
     keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
@@ -502,7 +503,7 @@ assoc.scan1.perms = function(pheno, pheno.col, probs, K, addcovar,
                log(nrow(pheno))
   } # if(output == "bic")
   # Convert the DO haplotype probabilities to Sanger alleles.
-  unique.geno = dohap2sanger(probs, snps, sdps)
+  unique.geno = dohap2sanger.internal(probs, snps, sdps)
   keep = which(!is.na(pheno[,pheno.col]))
   if(!missing(addcovar)) {
     # If we have additive covariates, we must permute them with the phenotype.
@@ -547,6 +548,8 @@ stop("Permutations for BIC not implemented yet.")
   } # else if(output == "lod")
     
 } # assoc.scan1.perms()
+
+
 ###
 # Helper function for two-way scan.
 assoc.scan2 = function(pheno, pheno.col, probs, K, addcovar, sdps, 
@@ -570,7 +573,7 @@ assoc.scan2 = function(pheno, pheno.col, probs, K, addcovar, sdps,
     rm(vTmp)
   } # if(!missing(K))
   # Convert the DO haplotype probabilities to Sanger alleles.
-  unique.geno = dohap2sanger(probs, snps, sdps)
+  unique.geno = dohap2sanger.internal(probs, snps, sdps)
   keep = which(!is.na(pheno[,pheno.col]))
   if(!missing(addcovar)) {
     keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
@@ -626,7 +629,9 @@ stop("Return a matrix of LOD scores")
 #            snps: data.frame containing genotyping array marker locations. 
 #                  SNP ID, chr, Mb and cM in columns 1:4.
 #            sdps: data.frame containing bp, SDP and Sanger SNPs.
-dohap2sanger = function(probs, snps, sdps) {
+# TBD: Re-arrange these functions so that one function can take probs and MUGA
+# markers and return Sanger SNPs mapped onto DO genomes.
+dohap2sanger.internal = function(probs, snps, sdps) {
 
   if(any(diff(snps[,3]) < 0)) {
     neg = which(diff(snps[,3]) < 0)
@@ -717,8 +722,66 @@ dohap2sanger = function(probs, snps, sdps) {
 
   return(list(map = map, allele.probs = allele.probs))
 
-} # dohap2sanger()
+} # dohap2sanger.internal()
 
+
+################################################################################
+# Given haplotype probs and MUGA markers, return the Sanger SNPs imputed onto
+# the DO genomes.
+# Arguments: sanger: GRanges containing chr & position with mcols named
+#            "A.J", "C57BL.6J", "129S1.SvImJ", "NOD.ShiLtJ", "NZO.HlLtJ",
+#            "CAST.EiJ", "PWK.PhJ", "WSB.EiJ" and containing 0 or 1 allele calls.
+#            probs: 3D numeric array of haplotype probabilities.
+#            snps: data.frame containing MUGA markers from ftp.jax.org/MUGA
+# Returns: GRanges with the genotype probability for each DO sample in probs
+#          at each SNP in sanger.
+# Note: this function is slow and is intended for small sets of SNPs.
+################################################################################
+dohap2sanger = function(sanger, probs, snps)
+{
+  if(is.null(sanger)) {
+    stop("dohap2sanger: sanger cannot be null.")
+  } # if(is.null(sanger))
+  
+  if(is.null(probs)) {
+    stop("dohap2sanger: probs cannot be null.")
+  } # if(is.null(probs))
+
+  if(is.null(snps)) {
+    stop("dohap2sanger: snps cannot be null.")
+  } # if(is.null(snps))
+
+  # Make sure that the founders are in mcols.
+  colnames(mcols(sanger)) = sub("^mcols\\.", "", colnames(mcols(sanger)))
+  colnames(mcols(sanger)) = sub("^X", "", colnames(mcols(sanger)))  # for 129S1
+  founder.names = c("A.J", "C57BL.6J", "129S1.SvImJ", "NOD.ShiLtJ", "NZO.HlLtJ",   
+                    "CAST.EiJ", "PWK.PhJ", "WSB.EiJ")
+  m = match(founder.names, colnames(mcols(sanger)))
+  if(any(is.na(m))) {
+    stop(paste("All of the founders are not in sanger:", founder.names[is.na(m)]))
+  } # if(any(is.na(m)))
+  founders = matrix(as.numeric(unlist(mcols(sanger)[,m])), nrow = length(sanger),
+             dimnames = list(NULL, founder.names))
+
+  # Change everything to bp.
+  if(max(snps[,3]) < 200) {
+    snps[,3] = snps[,3] * 1e6
+  } # if(max(snps[,3]) < 200)
+
+  # For each Sanger SNP, get the surrounding two MUGA markers, average the
+  # probabilities and create the genotype probabilities.
+  geno = matrix(0, nrow(probs), length(sanger), dimnames = list(rownames(probs),
+         paste(seqnames(sanger), start(sanger), sep = ":")))
+  for(i in 1:length(sanger)) {
+    marker = max(which(snps[,2] == runValue(seqnames(sanger))[i] & 
+                       snps[,3] <= start(sanger)[i]))
+    muga   = (probs[,,marker] + probs[,,marker+1]) * 0.5  # faster than apply.
+    geno[,i] = tcrossprod(founders[i,], muga)
+  } # for(i)
+
+  geno
+
+} # dohap2sanger()
 
 
 ###
@@ -730,10 +793,12 @@ dohap2sanger = function(probs, snps, sdps) {
 #            highlight.col: color vector of highlight colors.
 #            thr: LOD score to color red in the plot. All SNPs with a LOD
 #                 above this threshold will be returned.
+#            show.sdps: logical, default = FALSE, TRUE if the SDP plot 
+#                       should be shown.
 #            ...: arguments to be passed to plot.
 assoc.plot = function(results, 
   mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz",
-  highlight, highlight.col = "red", thr, ...) {
+  highlight, highlight.col = "red", thr, show.sdps = FALSE, ...) {
 
   old.par = par(no.readonly = TRUE)
     
@@ -748,7 +813,7 @@ assoc.plot = function(results,
 
   if("xlim" %in% names(call)) {
      xlim = eval(call$xlim, envir = parent.frame())
-	 if(any(xlim > 200)) {
+     if(any(xlim > 200)) {
        xlim = xlim * 1e-6
      } # if(xlim > 200)
      results = results[results[,2] >= xlim[1] & results[,2] <= xlim[2],]
@@ -773,8 +838,37 @@ assoc.plot = function(results,
     col[points.ge.thr] = 2
   } # else
 
-  layout(matrix(1:2, 2, 1), heights = c(0.4, 0.6))
-  par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
+  # Show the SDP plot, if requested.
+  if(show.sdps) {
+
+    layout(matrix(1:3, 3, 1), heights = c(0.2, 0.25, 0.55))
+
+    # NOTE: I can't figure out how to modify the xlim in the call
+    #       to add 4% to each end of the x-axis range. Adding the 
+    #       start and end of results is a hack. We set the SDP == 0
+    #       for all strains so that plot.sdps() doesn't draw anything.
+
+    par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
+    if(!missing(thr)) {
+      res = rbind(results[1,], results[results[,12] >= thr,], 
+            results[nrow(results),])
+      res[1,4:11] = 0
+      res[nrow(res),4:11] = 0
+      sdp.plot(res, xaxt = "s", ...)
+    } else {
+      sdp.plot(results, xaxt = "n", ...)
+    } # else
+    # This is for the association plot.
+    par(plt = c(0.12, 0.99, 0, 1), las = 1)
+
+  } else {
+
+    layout(matrix(1:2, 2, 1), heights = c(0.4, 0.6))
+    # This is for the association plot.
+    par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
+
+  } # else
+
   plot(results$pos, diff, ann = FALSE, xaxt = "n", pch = 20, 
        col = col, ...)
   usr = par("usr")
@@ -823,28 +917,58 @@ assoc.plot = function(results,
 # Plot specific SDP locations along a chromosome.
 # This idea is from Yalcin et.al., Genetics, 2005.
 # results: the data.frame output from merge.analysis().
-# sdps: strings of 0s and 1s that match some of the SDPs in column
-#       2 of the merge.analysis() results.
 # ...: additional arguments to pass to plot.
-sdp.plot = function(results, sdps, ...) {
-  plot(results[,1], rep(1, nrow(results)), col = 0, ylim = c(0, length(sdps)),
-       yaxs = "i", ann = FALSE, axes = FALSE, ...)
-  abline(h = 0:length(sdps))
-  usr = par("usr")
-  rect(usr[1], usr[3], usr[2], usr[4], lwd = 2)
-  mtext(side = 2, at = 1:length(sdps) - 0.5, text = sdps, line = 0.1, 
-        adj = 1, las = 2)
-  ax = axis(side = 1, labels = FALSE)
-  axis(side = 1, at = ax, labels = ax * 1e-6)
+sdp.plot = function(results, ...) {
+
+  if(is.null(results) || nrow(results) == 0) {
+    warning("sdp.plot: No SNPs to plot.")
+    return()
+  } # if(is.null(results) || nrow(results) == 0)
+
+  sdps = results[!duplicated(results[,3]),]
+
+  call = match.call()
+
+  if("xlim" %in% names(call)) {
+     plot(-1, -1, col = 0, ylim = c(0, 8), yaxs = "i", ann = FALSE, 
+          axes = FALSE, ...)
+  } else {
+     plot(-1, -1, col = 0, xlim = range(results[,2]), ylim = c(0, 8),
+          yaxs = "i", ann = FALSE, axes = FALSE, ...)
+  } # else
+
+  abline(h = 0:8)
+  box()
+  mtext(side = 2, at = 8:1 - 0.5, text = do.colors[,1],
+        line = 0.3, adj = 1, las = 2)
+
+  # Don't plot the axis if the user specifies xaxt = "n".
+  if("xaxt" %in% names(call)) {
+    xaxt = eval(call$xaxt, envir = parent.frame())
+    if(xaxt != "n") {
+      ax = axis(side = 1, labels = FALSE)
+      axis(side = 1, at = ax, labels = ax)
+    } # if(xaxt != "n")
+  } else {
+      ax = axis(side = 1, labels = FALSE)
+      axis(side = 1, at = ax, labels = ax)
+  } # else
+
   # Find the SDPs in the results.
-  for(i in 1:length(sdps)) {
-    m = results[which(results[,2] == sdps[i]),1]
-    y = matrix(rep((i-1):(i), length(m)), nrow = 2)
+  wh = which(colSums(results[,-c(1:3,12)]) > 0)
+  for(i in wh) {
+    m = results[which(results[,3+i] == 1),2]
+    y = matrix(rep((9-i):(8-i), length(m)), nrow = 2)
     y = rbind(y, rep(NA, ncol(y)))
     y = as.vector(y)
     x = matrix(rep(m, each = 2), nrow = 2)
     x = rbind(x, rep(NA, ncol(x)))
     x = as.vector(x)
-    lines(x, y)
+    lines(x, y, col = "grey40")
   } # for(i)
+
+  abline(h = 0:8)
+
 } # sdp.plot()
+
+

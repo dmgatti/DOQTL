@@ -66,7 +66,7 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
 
   # Line the genes up sequentially in columns.
   # Locs holds the gene symbol, the gene start and end, the text start and end,
-  # as well as the row to plot on.
+  # as well as the row to plot on. Use strwidth("W") as the space after a gene.
   locs = data.frame(name = mgi$Name, gstart = mgi$start,
          gend = mgi$stop, tstart = mgi$stop + strwidth("i"), 
          tend = mgi$stop + strwidth("W") + sapply(mgi$Name, strwidth),
@@ -81,7 +81,7 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
   iter = 0  # Number of iterations.
 
   # We need at least enough rows in the plot to fit the data.
-  while((nrows < row | (usr[4] - ymin) / diff(usr[3:4]) < 0.5) & iter < 20) { 
+  while((nrows < row | (usr[4] - ymin) / diff(usr[3:4]) < 0.7) & iter < 20) { 
 
     last.strht = strheight("I") 
     retval = get.gene.locations(locs, usr)
@@ -93,11 +93,11 @@ gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
     # If we need more rows in the plot, then decrement cex until strheight("I") decreases.
     if(row > nrows) {
       while(strheight("I") == last.strht) {
-        par(cex = par("cex") * 0.99)
+        par(cex = par("cex") * 0.98)
       } # while(strheight("I") == last.strht)
     } else if (row < nrows) {
       while(strheight("I") == last.strht) {
-        par(cex = par("cex") * 1.01)
+        par(cex = par("cex") * 1.02)
       } # while(strheight("I") == last.strht)
     } # else if (row < nrows)
 

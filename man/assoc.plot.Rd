@@ -9,7 +9,7 @@
 \usage{
   assoc.plot(results, 
   mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz", 
-  highlight, highlight.col = "red", thr, ...)
+  highlight, highlight.col = "red", thr, show.sdps = FALSE...)
 }
 \arguments{
   \item{results}{
@@ -27,13 +27,15 @@
   \item{thr}{
     Numeric value above which data points should be colored red and SNPs with these points returned.
   }
+  \item{show.sdps}{
+    Logical value (default = FALSE) that is TRUE if the strain distribution pattern (SDP) for the SNPs should be shown. When used with thr, only plots the founder SDPs for SNPs above thr.
+  }
   \item{\dots}{
     Additional arguments passed to plot.
   }
 }
 \details{
   Given the output from \code{\link{assoc.map}}, plot the LOD or difference in BIC values across the QTL interval in the top panel. Plot the genes in the interval in the lower panel. 
-  For the threshold, you may consider using max(results[,12] - 1.5) for a 1.5 LOD drop around the maximim LOD score.
   Make sure to use Sanger SNP and MGI feature files that are on the same genome build.
 }
 \value{
@@ -50,7 +52,7 @@
   \dontrun{ 
     results = assoc.map(pheno = pheno, pheno.col = 1, probs = probs, K = K, addcovar = addcovar, 
 	snps = snps, chr = 1, start = 40, end = 45)
-    assoc.plot(results)
+    assoc.plot(results, thr = 3, show.sdps = TRUE)
   }
 }
 \keyword{ association }

@@ -1,40 +1,40 @@
 \name{sdp.plot}
 \alias{sdp.plot}
 \title{
-  SNP distribution plot
+  Plot association mapping results.
 }
 \description{
-  Create a plot of SNPs along the chromosome. Still in development.
+  Plot the founder strain distribution patterns (SDP) of the SNPs in results.
 }
 \usage{
-  sdp.plot(results, sdps, ...)
+  sdp.plot = function(results, ...)
 }
 \arguments{
   \item{results}{
-    Data.frame as produced by \code{\link{assoc.map}}.
-  }
-  \item{sdps}{
-    Character vector containing SDPs to plot.
+    Data.frame containing output from \code{\link{assoc.map}}.
   }
   \item{\dots}{
-    Additional arguments to pass to plot.
+    Additional arguments passed to plot.
   }
 }
 \details{
-  This is meant to be like the bottom panel of FALSEigure 2 in Yalcin et.al, Genetics, 2005.
+  Given the output from \code{\link{assoc.map}}, plot the SDPs for the SNPs in results. This will show which strains have the minor allele at each SNP in results. You may also add this plot to the top of \code{\link{assoc.plot}}.
 }
 \value{
-  Creates a plot along a genomic interal with tic marks where the given SDPs occur.
-}
-\references{
-  Using progenitor strain information to identify quantitative trait nucleotides in outbred mice.
-  Yalcin B, FALSElint J, Mott R.
-  Genetics. 2005 Oct;171(2):673-81.
+  Produces a plot. There is no return value.
 }
 \author{
   Daniel Gatti
 }
-\examples{
-  \dontrun{ sdp.plot(results, sdps) }
+\seealso{
+  \code{\link{assoc.map}}, \code{\link{assoc.plot}}
 }
-\keyword{ SNP }
+\examples{
+  \dontrun{ 
+    results = assoc.map(pheno = pheno, pheno.col = 1, probs = probs, K = K, addcovar = addcovar, 
+	snps = snps, chr = 1, start = 40, end = 45)
+    sdp.plot(results[results[,12] > 3,])
+  }
+}
+\keyword{ association }
+\keyword{ qtl }
