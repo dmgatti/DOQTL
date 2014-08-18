@@ -184,10 +184,10 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
   xchr = which(snps[,2] %in% "X")
   sex = NULL
   if(length(xchr) > 0) {
-    sex.col = grep("sex", colnames(pheno), ignore.case = TRUE)
+    sex.col = grep("^sex$", colnames(pheno), ignore.case = TRUE)
     if(length(sex.col) == 0) {
       if(!missing(addcovar)) {
-        sex.col = grep("sex", colnames(addcovar), ignore.case = TRUE)
+        sex.col = grep("^sex$", colnames(addcovar), ignore.case = TRUE)
       } # if(!missing(addcovar))
 
       if(length(sex.col) == 0) {
@@ -316,11 +316,11 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
       if(missing(addcovar)) {
 
         # No covariates, but we need sex for the null hypothesis.
-        if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0) {
-          sex = pheno[,grep("sex", colnames(pheno), ignore.case = TRUE)]
+        if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0) {
+          sex = pheno[,grep("^sex$", colnames(pheno), ignore.case = TRUE)]
           sex = as.matrix(as.numeric(sex == "M"))
           dimnames(sex) = list(rownames(pheno), "sex")
-        } # if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0)
+        } # if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0)
 
         x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
                 snps = snps[xchr,,drop = FALSE])
@@ -374,10 +374,10 @@ scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, m
   xchr = which(snps[,2] %in% "X")
   sex = NULL
   if(length(xchr) > 0) {
-    sex.col = grep("sex", colnames(pheno), ignore.case = TRUE)
+    sex.col = grep("^sex$", colnames(pheno), ignore.case = TRUE)
     if(length(sex.col) == 0) {
       if(!missing(addcovar)) {
-        sex.col = grep("sex", colnames(addcovar), ignore.case = TRUE)
+        sex.col = grep("^sex$", colnames(addcovar), ignore.case = TRUE)
       } # if(!missing(addcovar))
 
       if(length(sex.col) == 0) {
@@ -505,11 +505,11 @@ scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, m
       if(missing(addcovar)) {
 
         # No covariates, but we need sex for the null hypothesis.
-        if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0) {
-          sex = pheno[,grep("sex", colnames(pheno), ignore.case = TRUE)]
+        if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0) {
+          sex = pheno[,grep("^sex$", colnames(pheno), ignore.case = TRUE)]
           sex = as.matrix(as.numeric(sex == "M"))
           dimnames(sex) = list(rownames(pheno), "sex")
-        } # if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0)
+        } # if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0)
 
         x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
                 K = K[keep,keep], snps = snps[xchr,,drop = FALSE])
@@ -563,10 +563,10 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
   xchr = which(snps[,2] %in% "X")
   sex = NULL
   if(length(xchr) > 0) {
-    sex.col = grep("sex", colnames(pheno), ignore.case = TRUE)
+    sex.col = grep("^sex$", colnames(pheno), ignore.case = TRUE)
     if(length(sex.col) == 0) {
       if(!missing(addcovar)) {
-        sex.col = grep("sex", colnames(addcovar), ignore.case = TRUE)
+        sex.col = grep("^sex$", colnames(addcovar), ignore.case = TRUE)
       } # if(!missing(addcovar))
 
       if(length(sex.col) == 0) {
@@ -725,11 +725,11 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
       if(missing(addcovar)) {
 
         # No covariates, but we need sex for the null hypothesis.
-        if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0) {
-          sex = pheno[,grep("sex", colnames(pheno), ignore.case = TRUE)]
+        if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0) {
+          sex = pheno[,grep("^sex$", colnames(pheno), ignore.case = TRUE)]
           sex = as.matrix(as.numeric(sex == "M"))
           dimnames(sex) = list(rownames(pheno), "sex")
-        } # if(length(grep("sex", colnames(pheno), ignore.case = TRUE)) > 0)
+        } # if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0)
 
         x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
                 K = K[["X"]][keep,keep], snps = snps[xchr,,drop = FALSE])
