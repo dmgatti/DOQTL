@@ -7,7 +7,7 @@
   Plot the founder strain distribution patterns (SDP) of the SNPs in results.
 }
 \usage{
-  sdp.plot = function(results, ...)
+  sdp.plot(results, ...)
 }
 \arguments{
   \item{results}{
@@ -38,3 +38,4 @@
 }
 \keyword{ association }
 \keyword{ qtl }
+\keyword{ sdp }

@@ -9,7 +9,7 @@
 \usage{
   assoc.plot(results, 
   mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz", 
-  highlight, highlight.col = "red", thr, show.sdps = FALSE...)
+  highlight, highlight.col = "red", thr, show.sdps = FALSE, ...)
 }
 \arguments{
   \item{results}{
