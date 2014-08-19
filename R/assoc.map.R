@@ -854,7 +854,7 @@ assoc.plot = function(results,
             results[nrow(results),])
       res[1,4:11] = 0
       res[nrow(res),4:11] = 0
-      sdp.plot(res, xaxt = "s", ...)
+      sdp.plot(res, xaxt = "n", ...)
     } else {
       sdp.plot(results, xaxt = "n", ...)
     } # else
