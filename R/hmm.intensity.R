@@ -5,7 +5,7 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn) {
 
   # Estimate the (theta, rho) genotype cluster means and variances.
   params = estimate.cluster.params(founders = founders, data = data, chr = chr)
-  save(params, file = paste("chr", chr, ".initial.cluster.params.Rata"))
+  save(params, file = paste0("chr", chr, ".initial.cluster.params.Rdata"))
 
   # Set negative values to NA for this. They will be removed when we take the 
   # means.
