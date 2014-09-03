@@ -214,6 +214,8 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
   rect(usr[1], usr[3], usr[2], usr[4], lwd = 2)
   par(old.par)
 } # coefplot()
+
+
 # Plot the 36 state effect plot.
 # Arguments: pheno: data.frame with with phenotype data.  Samples in rows, 
 #                   phenotypes in columns.
@@ -232,31 +234,40 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
 #            covar: a vector that can be converted to a factor with 
 #                   a category (i.e. sex or diet, etc.) for each sample. Must
 #                   be named with the sample IDs that match rownames(pheno).
+#            ...: arguments passed along to plot.
 pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
-               sex = NA, covar) {
+               sex = NA, covar, ...) {
+
   if(is.null(pheno)) {
     stop(paste("The phenotype matrix cannot be null."))
   } # if(is.null(pheno))
+
   if(is.null(rownames(pheno))) {
     stop(paste("The phenotypes must have rownames to verify that samples",
          "are lined up."))
   } # if(is.null(rownames(pheno)))
+
   if(is.null(pheno.col)) {
     stop(paste("The phenotype column cannot be null."))
   } # if(is.null(pheno.col))
+
   if(is.null(probs)) {
     stop(paste("The founder probabilities array cannot be null."))
   } # if(is.null(probs))
+
   pheno = pheno[rownames(pheno) %in% dimnames(probs)[[1]],,drop=FALSE]
   probs = probs[dimnames(probs)[[1]] %in% rownames(pheno),,]
   pheno = pheno[match(dimnames(probs)[[1]], rownames(pheno)),,drop=FALSE]
+
   if(nrow(pheno) == 0 | dim(probs)[1] == 0) {
     stop(paste("The sample names in pheno and probs do not match."))
   } # if(nrow(pheno) == 0 | dim(probs)[1] == 0)
+
   if(any(rownames(pheno) != dimnames(probs)[[1]])) {
     stop(paste("The phenotypes must have the same sample names as",
          "the founder probabilities."))
   } # if(nrow(pheno) != dim(probs)[[1]])
+
   if(!missing(covar)) {
     covar = covar[rownames(pheno)]
     if(!all(names(covar) %in% rownames(pheno))) {
@@ -264,19 +275,25 @@ pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
     } # if(all(names(covar), rownames(pheno)))
     covar = factor(covar)
   } # if(!missing(covar))
+
   if(is.null(snp.id)) {
     stop(paste("The snp.id cannot be null."))
   } # if(is.null(snp.id))
+
   if(is.null(snps)) {
     stop(paste("The snps cannot be null."))
   } # if(is.null(snps))
+
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   rownames(snps) = snps[,1]
+
   # Get the phenotype and genotype probabilities.
   slice = probs[,,snp.id]
   ph    = pheno[,pheno.col]
+
   # Get the genotype with the maximum probability for each sample.
   gt = rep(NA, nrow(slice))
+
   # If we are on the X chromosome and we have sex, then process the males
   # and females separately.
   if(snps[snp.id,2] == "X" & !is.na(sex)) {
@@ -312,10 +329,12 @@ pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
       } # else
     } # for(i)
   } # else
+
   # Order the levels and plot.
   founders = sort(dimnames(probs)[[2]])
   states = outer(founders, founders, paste, sep = "")
   states = sort(states[upper.tri(states, diag = TRUE)])
+
   # Get means and standard errors.  
   spl = split(ph, gt)
   geno.means = sapply(spl, mean, na.rm = TRUE)
@@ -324,6 +343,7 @@ pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
   ord = order(geno.means)
   geno.means = geno.means[ord]
   geno.se    = geno.se[ord]
+
   # Fill in missing genotypes.
   missing.states = states[!states %in% names(geno.means)]
   if(length(missing.states) > 0) {
@@ -332,29 +352,35 @@ pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
     names(geno.means)[1:length(missing.states)] = missing.states
     names(geno.se)[1:length(missing.states)]    = missing.states
   } # if(length(missing.states) > 0)
+
   # Factor the genotypes.
   gt = factor(gt, levels = names(geno.means), ordered = TRUE)
+
   # If we have a covariate, then set the pch to plot the different
   # categories.
   pch = 16
   if(!missing(covar)) {
     pch = as.numeric(covar)
   } # if(!missing(covar))
+
   # Make the plot.
   par(font = 2, font.lab = 2, font.axis = 2, las = 2)
+
   # If we're plotting the legend, add a little space at the top of the plot.
   ylim = range(ph, na.rm = TRUE)
   if(legend) {
     ylim[2] = ylim[2] + (ylim[2] - ylim[1]) * 0.2
   } # if(legend)
+
   plot(1, 1, col = 0, xlim = c(0.5, length(states) + 0.5),
        ylim = ylim, xaxt = "n", xlab = "Genotype",
-       ylab = colnames(pheno)[pheno.col])
+       ylab = colnames(pheno)[pheno.col], ...)
   abline(v = 1:36, col = "grey80")
-  points(as.numeric(gt), ph, pch = pch)
+  points(as.numeric(gt), ph, pch = pch, col = rgb(0,0,0,0.4))
   title(main = paste(snps[snp.id,1], "\nChr", snps[snp.id,2], ":",
         snps[snp.id,3], "Mb"))
   axis(side = 1, at = 1:36, labels = names(geno.means))
+
   # Plot means and standard errors.
   offset = 0.3
   for(i in 1:length(geno.means)) {
@@ -362,10 +388,12 @@ pxg.plot = function(pheno, pheno.col, probs, snp.id, snps, legend = TRUE,
     lines(rep(i, 2), c(geno.means[i] - geno.se[i], geno.means[i] + geno.se[i]),
           lwd = 2, col = 2)
   } # for(i)
+
   # Legend
-  if(legend) {
-    
+  if(legend) {    
     legend("topleft", pch = do.colors[,1], legend = do.colors[,2],
            bg = "white", cex = 0.9)
   } # if(legend)
+
 } # pxg.plot()
+

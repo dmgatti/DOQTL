@@ -57,7 +57,7 @@
        sex: Character vector, containing "M" or "F" indicating sex. Sample IDs must be in names.
 	   code: Character vector containing two letter genotype codes for each founder sample. Sample IDs must be in names.
 	   
-    When sampletype = DOFALSE1
+    When sampletype = DOF1
 	   x: Numeric matrix, num.samples x num.snps, with X intensities for all founders and F1s (if available). Sample IDs and SNP IDs must be in rownames and colnames.
        y: Numeric matrix, num.samples x num.snps, with Y intensities for all founders and F1s (if available). Sample IDs and SNP IDs must be in rownames and colnames.
        sex: Character vector, containing "M" or "F" indicating sex. Sample IDs must be in names.
@@ -65,7 +65,7 @@
 	   direction: Character string that is either "DOxMUT" if a female DO was crossed with a male mutant mouse or "MUTxDO" if a female mutant mouse was crossed with a male DO. This affects the genotyping of teh X chromosome.
   }
   \item{transprobs}{
-     FALSEunction to call to estimate the transition probabilities between markers for non-DO samples. \emph{Not required for DO.}
+     Function to call to estimate the transition probabilities between markers for non-DO samples. \emph{Not required for DO.}
   }
   \item{snps}{
      Data.frame containing the marker locations. SNP ID, chromosome, Mb anc cM locations in columns 1 through 4, respectively. \emph{Not required for DO.}
