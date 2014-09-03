@@ -7,7 +7,7 @@
   This function plots the phenotype versus the most probable genotype at a single marker.
 }
 \usage{
-  pxg.plot(pheno, pheno.col, probs, snp.id, snps, legend = TRUE, sex = NA, covar)
+  pxg.plot(pheno, pheno.col, probs, snp.id, snps, legend = TRUE, sex = NA, covar, ...)
 }
 \arguments{
   \item{pheno}{
@@ -33,6 +33,9 @@
   }
   \item{covar}{
     Vector of categories for each sample (i.e. diet, treatement, etc.) which will be plotted as different symbols. Optional.
+  }
+  \item{\dots}{
+    Additional arguments passed along to plot.
   }
 }
 \details{
