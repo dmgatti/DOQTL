@@ -18,12 +18,12 @@
        x: Numeric matrix, num.samples x num.snps, with X intensities for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
        y: Numeric matrix, num.samples x num.snps, with Y intensities for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
        sex: Character vector, containing "M" or F indicating sex. Sample IDs must be in names.
-	   gen: Character matrix containing the generation of DO outbreeding for each sample. FALSE or the DO, this should be "DO" followed by a number with no space between them. FALSEor CC mice, this should be CC. Sample IDs must be in names.
+	   gen: Character matrix containing the generation of DO outbreeding for each sample. For the DO, this should be "DO" followed by a number with no space between them. For CC mice, this should be CC. Sample IDs must be in names.
 	   
     When method = allele:
-       geno: Character matrix, num.samples x num.snps, with allele calls for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
+       geno: Character matrix, num.samples x num.snps, with allele calls (A,C,G,T,H or N) for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
        sex: Character vector, containing "M" or F indicating sex. Sample IDs must be in names.
-	   gen: Character matrix containing the generation of DO outbreeding for each sample. FALSEor the DO, this should be "DO" followed by a number with no space between them. FALSEor CC mice, this should be CC. Sample IDs must be in names.	   
+	   gen: Character matrix containing the generation of DO outbreeding for each sample. For the DO, this should be "DO" followed by a number with no space between them. For CC mice, this should be CC. Sample IDs must be in names.	   
   }
   \item{chr}{
      Character vector containing chromosomes to run. Must match the chromosome IDs in the snps table.  "all" (default) will run all chromosomes.
@@ -38,7 +38,7 @@
      Character string indicating the array type. Must be one of "megamuga", "muga" or "other". Default equals "megamuga".
   }
   \item{sampletype}{
-     Character string containing the type of samples being run. Must be one of "DO", "CC", "DOFALSE1", or "other". Default equals "DO".
+     Character string containing the type of samples being run. Must be one of "DO", "CC", "DOF1", or "other". Default equals "DO".
   }
   \item{method}{
      Character string containing method of genome reconstruction. Must be one of "intensity" or "allele". Default equals "intensity".
