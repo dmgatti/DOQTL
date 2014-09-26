@@ -7,8 +7,8 @@ citEntry(entry = "Article",
 		as.person("Elissa J. Chesler"), as.person("Karl W. Broman"), as.person("Gary A. Churchill")),
 		title = "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
     journal = "G3", year = 2014, 
-    volume = "vol", pages = "pp--pp", 
+    volume = "4", pages = "1623--1633", 
     url = "http://do.jax.org", 
     textVersion = paste(" (2014)", 
         "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
-        "G3 vol:pp--pp"))
+        "G3 4:1623--1633"))
