@@ -1,9 +1,23 @@
 % -*- coding: utf-8 -*-
 \name{NEWS}
-\title{DOQTL News}
+\title{News for Package \pkg{DOQTL}}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.99}{
+\section{CHANGES IN VERSION 0.99.1}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Added limited support for Heterogeneous Stock mice.
+	  
+	  \item \code{assoc.plot} Added strain distribution patterns above the association mapping plot.
+    }
+  }
+  \subsection{CHANGES}{
+      \item \code{rankZ} Fixed bug relating to NA values.
+  }
+}
+
+
+\section{CHANGES IN VERSION 0.99.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item \code{read.vcf} reads Sanger SNP VCF files.

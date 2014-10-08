@@ -6,9 +6,12 @@ citEntry(entry = "Article",
  		as.person("Riyan Cheng"), as.person("Daniel Pomp"), as.person("Abraham Palmer"), 
 		as.person("Elissa J. Chesler"), as.person("Karl W. Broman"), as.person("Gary A. Churchill")),
 		title = "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
-    journal = "G3", year = 2014, 
-    volume = "4", pages = "1623--1633", 
-    url = "http://do.jax.org", 
+    journal = "G3", 
+	year = 2014, 
+    volume = "4", 
+	pages = "1623--1633", 
+    url = "http://www.g3journal.org/content/4/9/1623.long", 
     textVersion = paste(" (2014)", 
         "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
-        "G3 4:1623--1633"))
+        "G3 4:1623--1633")
+)
