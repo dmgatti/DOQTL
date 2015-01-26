@@ -26,7 +26,8 @@ import( annotate,
 		org.Mm.eg.db,
 		QTLRel,
 		Rsamtools,
-        RUnit,
+                RUnit,
+ 		S4Vectors,
 		XML )
 
 importFrom(mclust, Mclust, mclustBIC, priorControl)
