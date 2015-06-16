@@ -1,16 +1,15 @@
 #############################################################################
 # Get the mouse chromosome lengths.
-get.chr.lengths = function() {
+get.chr.lengths = function(genome) {
+
+  genome = paste0("BSgenome.Mmusculus.UCSC.", genome)
+  obj = get(genome)
+
   # Get the chromosome lengths.
-  chrlen = org.Mm.egCHRLENGTHS
-  chrlen = chrlen[names(chrlen) %in% c(1:19, "X", "Y", "M")]
-  names(chrlen) = sub("X", "20", names(chrlen))
-  names(chrlen) = sub("Y", "21", names(chrlen))
-  names(chrlen) = sub("M", "22", names(chrlen))
-  chrlen = chrlen[order(as.numeric(names(chrlen)))]
-  names(chrlen) = sub("20", "X", names(chrlen))
-  names(chrlen) = sub("21", "Y", names(chrlen))
-  names(chrlen) = sub("22", "M", names(chrlen))
+  chrlen = seqlengths(obj)
+  chrlen = chrlen[-grep("Un|random", names(chrlen))]
   chrlen = chrlen * 1e-6
+
   return(chrlen)
+
 } # get.chr.lengths()

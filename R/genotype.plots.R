@@ -3,51 +3,35 @@
 # Feb. 14, 2011
 # Daniel Gatti
 # Dan.Gatti@jax.org
-# Contains: get.chr.lengths, chr.skeletons, genomic.points, plot.genoprob,
+# Contains: chr.skeletons, genomic.points, plot.genoprob,
 #           write.genoprob.plots.
 ################################################################################
-#############################################################################
-# Get the mouse chromosome lengths.
-get.chr.lengths = function() {
-  # Get the chromosome lengths.
-  chrlen = org.Mm.egCHRLENGTHS
-  remove = grep("Un|random", names(chrlen))
-  if(length(remove) > 0) {
-    chrlen = chrlen[-remove]
-  } # if(length(remove) > 0)
-  old.warn = options("warn")$warn
-  options(warn = -1)
-  chrlen = chrlen[order(as.numeric(names(chrlen)))]
-  options(warn = old.warn)
-  chrlen = chrlen * 1e-6
-  return(chrlen)
-} # get.chr.lengths()
+
 #############################################################################
 # Draw the skeleton of the chromosomes.
 # Arguments: chr: vector with chr names to plot.
-chr.skeletons = function(chr, chrlen = "DO", ...) {
-  
-  # If the user supplied "DO", then get the mouse genome.
-  if(chrlen[1] == "DO") {
-    chrlen = get.chr.lengths()
-  }
-  
-  chrlen = chrlen[names(chrlen) %in% chr]
+chr.skeletons = function(chr, chrlen, ...) {
+
   # Plot a coordinate system to draw on.
   par(font = 2, font.axis = 2, font.lab = 2, las = 1, plt = c(0.14, 0.95, 
       0.1, 0.9))
   plot(1, 1, col = 0, xlim = c(1, (2 * length(chrlen) + 1)),
        ylim = c(0, 200), xaxt = "n", yaxs = "i", xlab = "",
        ylab = "Mb")
+
   # Draw chr skeletons
   for(i in 1:length(chrlen)) {
     lines(2 * c(i, i), c(0, chrlen[i]))
   } # for(i)
+
   # Draw light lines at 10 Mb and heavier lines at 50 Mb.
   abline(h = 0:20 * 10, col = "grey80")
   abline(h = 0:4  * 50, col = "grey50", lwd = 1.2)
   mtext(side = 1, at = 2 * 1:length(chrlen), text = names(chrlen))
+
 } # chr.skeletons()
+
+
 ################################################################################
 # Once a Chr skeleton is up, add points to it.
 # Arguments: chr: numeric vector, with chr for each point to plot.
@@ -62,48 +46,65 @@ genomic.points = function(chr = NULL, loc = NULL) {
     points(2 * chr, loc, pch = 3, cex = 2, lwd = 2, col = 2)
   } # if(!is.null(chr) & !is.null(loc))
 } # genomic.points()
+
+
 ################################################################################
 # Plot the genotypes using only the maximum probability at each SNP and arrange
 # the colors to minimize jumping from one strand to the other.
 # Arguments: x: numeric matrix, with smoothed probabilities. SNPs in rows, 
-#                    genotypes in columns.
+#               genotypes in columns. May also be a genoprobs object with
+#               a cross attribute specifying DO or HS mice.
 #            snps: matrix with SNP IDs in column 1, chromosomes in column 2 and
 #                  Mb locations in column 3.
 #            colors: data.frame with three columns containing the founder 
 #                    letters, names and colors in columns 1, 2 & 3, respectively.
 #                    Default = "DO", which automatically uses the CC founder 
 #                    colors.
-#            chrlen: named numeric vector containing chromosome lengths or "DO" for the mouse chromosomes.
+#            chrlen: named numeric vector containing chromosome lengths or "mm10" for the mouse chromosomes.
 #            ...: other arguments to be passed to plot.
-plot.genoprobs = function(x, snps, colors = "DO", chrlen = "DO", ...) {
+plot.genoprobs = function(x, snps, colors = "DO", chrlen = "mm10", ...) {
+
   old.par = par(no.readonly = TRUE)
+
   states = colnames(x)
   if(max(snps[,3], na.rm = TRUE) > 200) {
     snps[,3] = snps[,3] * 1e-6
   } # if(max(snps[,3], na.rm = TRUE) > 200)
   
-  if(colors == "DO") {
-    colors = do.colors
-  } else {
-    if(!is.data.frame(colors)) {
-      stop(paste("If not using the DO colors, colors must be a data frame",
-	         "with three columns containing the founder letters, names and",
-		       "colors in columns 1, 2 & 3, respectively."))
-    } # if(!is.data.frame(colors))
+  cross = attr(x, "cross")
+  if(is.null(cross)) {
+    if(colors == "DO") {
+      colors = do.colors
+    } else {
+      if(!is.data.frame(colors)) {
+        stop(paste("If not using the DO colors, colors must be a data frame",
+  	         "with three columns containing the founder letters, names and",
+  		       "colors in columns 1, 2 & 3, respectively."))
+      } # if(!is.data.frame(colors))
 	
-    if(ncol(colors) != 3) {
-	    stop(paste("Colors does not have three columns. Colors must have three",
+      if(ncol(colors) != 3) {
+        stop(paste("Colors does not have three columns. Colors must have three",
 	         "columns containing the founder letters, names and colors in",
-           "columns 1, 2 & 3, respectively."))
-	  } # if(ncol(colors) != 3)
+          "columns 1, 2 & 3, respectively."))
+	} # if(ncol(colors) != 3)
+    } # else
+  } else {
+    if(cross == "DO" | cross == "CC" | cross == "DOF1") {
+      colors = do.colors
+    } else if(cross == "HS") {
+      colors = hs.colors 
+    } # else
   } # else
-  if(chrlen == "DO") {
-    chrlen = get.chr.lengths()
+
+  if(chrlen == "mm10") {
+    chrlen = get.chr.lengths(chrlen)
   } # if(chrlen == "DO")
+
   # Subset the data to only include the SNPs in the snpfile.
   x = x[rownames(x) %in% snps[,1],]
   snps = snps[snps[,1] %in% rownames(x),]
   prmsth = x[match(snps[,1], rownames(x)),]
+
   # Create state colors.
   state.cols = cbind(states, matrix(unlist(strsplit(states, split = "")),
                length(states), 2, byrow = TRUE, dimnames = list(states, NULL)))
