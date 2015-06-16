@@ -122,7 +122,7 @@ estimate.cluster.params = function(founders, data, chr) {
       if(is.na(mc$BIC[G])) {
         G = max(which(!is.na(mc$BIC[1:G])))
       } # if(is.na(mc$BIC[G]))
-      mc = Mclust(rt, G = 1:G, modelmodelNames = "VVI")
+      mc = Mclust(rt, G = 1:G, modelNames = "VVI")
 
     } # if(any(prop.lt.min.prop))
     options("warn" = old.warn)
