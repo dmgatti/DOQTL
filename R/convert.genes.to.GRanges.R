@@ -7,6 +7,6 @@ function(mgi) {
   } # if(is.null(mgi))
   gr = GRanges(seqnames = mgi$seqid, ranges = IRanges(start = mgi$start,
          end = mgi$stop))
-  metadata(gr) = list(Name = mgi$Name)
+  mcols(gr) = list(Name = mgi$Name)
   return(gr)
 }

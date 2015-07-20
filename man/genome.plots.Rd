@@ -9,8 +9,8 @@
   This function plots the genotype of a DO sample by taking the genotype with the maximum probability at each marker.
 }
 \usage{
-  \method{plot}{genoprobs}(x, snps, colors = "DO", chrlen = "DO", ...)
-  chr.skeletons(chr, chrlen = "DO", ...)
+  \method{plot}{genoprobs}(x, snps, colors = "mm10", chrlen = "mm10", ...)
+  chr.skeletons(chr, genome = "mm10", ...)
   genomic.points(chr = NULL, loc = NULL)
   write.genoprob.plots(path = ".", snps)
 }
@@ -25,7 +25,10 @@
     Character string containing "DO" for the DO. FALSEor all other crosses, a data.frame containing single letter codes, strain names and colors for the founders in columns 1 through 3, respectively.
   }
   \item{chrlen}{
-    Character string containing "DO" for mice. FALSEor all other organisms, the lengths of each chromosome in Mb.
+    Character string containing the genome for the chromosome lengths. Default = mm10.
+  }
+  \item{genome}{
+    Character string containing the genome for the chromosome lengths. Default = mm10.
   }
   \item{chr}{
     Vector of chromosome IDs.
