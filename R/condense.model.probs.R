@@ -19,16 +19,28 @@
 #                   'Dominance' condenses them down to 16 values, the first 8
 #                   are additive values and the last 8 are dominance values.
 #                   'Full' returns all 36 states.
+#            cross: character containing the cross type. Typically "DO, "CC, 
+#                   "HS" or "DOF1".
 condense.model.probs = function(path = ".", write = "founder.probs.Rdata",
-                       model = c("additive", "dominance", "full")) {
+                       model = c("additive", "dominance", "full"),
+                       cross = "DO") {
+
   model = match.arg(model)
   path  = add.slash(path)
+
+  if(!is.character(path)) {
+    stop(paste("\\'path\\' must be a characer vector containing the path to",
+        "the directory where the genoprobs files are."))
+  } # if(!is.character(path))
+
   # Get the files that we need to process.
   files = dir(path, pattern = ".genotype.probs.Rdata$", full.names = TRUE)
+
   # Get their sample IDs.
   samples = dir(path, pattern = "genotype.probs.Rdata$", full.names = FALSE)
   samples = sub("\\.genotype\\.probs\\.Rdata$", "", samples)
   model.probs = NULL
+
   if(model == "additive") {
     model.probs = get.additive(files = files, samples = samples)
   } else if(model == "dominance") {
@@ -39,12 +51,19 @@ condense.model.probs = function(path = ".", write = "founder.probs.Rdata",
     stop(paste("condense.model.probs:Invalid model '", model,"'. Please",
          "enter one of additive, dominance or full in the model argument."))
   } # else
+
+  attr(model.probs, "cross") = cross
+
   print("Writing data...")
   save(model.probs, file = write)
+
 } # condense.model.probs()
+
+
 # Helper function to get the additive model probabilities, which condenses
 # the 36 genotypes into additive allele dosages.
 get.additive = function(files, samples) {
+
   # Create a large 3D array with samples/states/SNPs in dimensions 1,2,3.
   print(files[1])
   load(files[1]) # load in prsmth
@@ -52,14 +71,10 @@ get.additive = function(files, samples) {
   founders = sort(unique(unlist(strsplit(colnames(prsmth), split = ""))))
   model.probs = array(0, c(length(files), length(founders), nrow(prsmth)),
                 dimnames = list(samples, founders, rownames(prsmth)))
+
   # Create a matrix that we can use to multiply the 36 state probabilities.
-  spl = strsplit(colnames(prsmth), split = "")
-  names(spl) = colnames(prsmth)
-  spl = lapply(spl, factor, levels = sort(unique(unlist(spl))))
-  spl = lapply(spl, table)
-  mat = matrix(unlist(spl), length(spl[[1]]), length(spl), dimnames = 
-        list(names(spl[[1]]), names(spl)))
-  mat = t(mat * 0.5)
+  mat = get.diplotype2haplotype.matrix(colnames(prsmth))
+
   # Place the founder probabilities in the matrix.
   model.probs[1,,] = t(prsmth %*% mat)
   for(i in 2:length(files)) {
@@ -67,8 +82,12 @@ get.additive = function(files, samples) {
     load(files[i]) # load in prsmth
     model.probs[i,,] = t(prsmth %*% mat)
   } # for(i)
-  return(model.probs)
+
+  model.probs
+
 } # get.additive()
+
+
 # Helper function to get the additive model probabilities, which condenses
 # the 36 genotypes into additive and dominant dosages.
 get.dominance = function(files, samples) {
@@ -107,24 +126,46 @@ get.dominance = function(files, samples) {
     model.probs[i,1:length(founders),] = addmat %*% prsmth
     model.probs[i,(length(founders) + 1):dim(model.probs)[[2]],] = dommat %*% prsmth
   } # for(i)
-  return(model.probs)
+ 
+  model.probs
+
 } # get.dominance()
+
+
 # Helper function to get the full model probabilities, which just gathers
 # the 36 states for each samples into one file.
 get.full = function(files, samples) {
+
   # Create a large 3D array with samples/states/SNPs in dimensions 1,2,3.
   load(files[1]) # load in prsmth
   prsmth = t(prsmth)
-  founders = sort(unique(unlist(strsplit(rownames(prsmth), split = ""))))
   model.probs = array(0, c(length(files), nrow(prsmth), ncol(prsmth)),
                 dimnames = list(samples, rownames(prsmth), colnames(prsmth)))
+
   # Place the probabilities in the matrix.
   model.probs[1,,] = prsmth
+
   for(i in 2:length(files)) {
     print(files[i])
     load(files[i]) # loadin prsmth
     prsmth = t(prsmth)
     model.probs[i,,] = prsmth
   } # for(i)
-  return(model.probs)
+
+  model.probs
+
 } # get.full()
+
+
+get.diplotype2haplotype.matrix = function(states) {
+
+  spl = strsplit(states, split = "")
+  names(spl) = states
+  spl = lapply(spl, factor, levels = sort(unique(unlist(spl))))
+  spl = lapply(spl, table)
+  mat = matrix(unlist(spl), length(spl[[1]]), length(spl), dimnames = 
+        list(names(spl[[1]]), names(spl)))
+  mat = t(mat * 0.5)
+
+} # get.diplotype2haplotype.matrix()
+
