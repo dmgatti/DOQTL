@@ -7,8 +7,7 @@
 # SNPs.
 # Arguments: data: list containing x & y intensities or genotypes.
 #            chr: character vector, with chromosomes to run.  Must match
-#                 the chromosome IDs in the snps table.  NULL means
-#                 run all.
+#                 the chromosome IDs in the snps table.
 #            snps: data.frame with SNP IDs, chr, Mb and cM positions. 
 #            output.dir: character, with the file directory for the final
 #                        theta & rho mean and variance files.
@@ -17,19 +16,16 @@
 #            plot: boolean that is true if the user would like to plot a sample
 #                  chromosome as the model progresses.
 calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
-                          trans.prob.fxn, plot = FALSE) {
+                          trans.prob.fxn, plot = FALSE, clust = c("mclust", "pamk")) {
 
-  # Select the chromosomes to run.  If chr = "all", then run all chrs.
-  if(chr[1] == "all") {
-    chr = names(snps)
-  } # else
-
+  clust = match.arg(clust)
+  
   # Extract the sample and founder temporary data file names.
   tmpfiles = list(dx = data$x, dy = data$y, fx = founders$x, fy = founders$y)
 
   # Loop through each chromosome.
   for(curr.chr in chr) {
-    
+
     print(paste("CHR", curr.chr))
 
     # Get SNPs for the current chromosome.
@@ -52,7 +48,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
     # Normalize the samples and founders.
     # MegaMUGA founders seem to be well aligned to the data, so we're
     # not normalizing MegaMUGA data at the moment.
-    if(attr(data, "array") != "megamuga") {
+    if(attr(data, "array") == "muga") {
 
       newxy = quantilenorm(x1 = data$x, y1 = data$y, x2 = founders$x,
               y2 = founders$y)
@@ -60,7 +56,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
       founders$y = newxy[[2]]
       rm(newxy)
 
-    } # if(attr(data, "array") != "megamuga")
+    } # if(attr(data, "array") != "muga")
     gc()
 
     # If this is the X chromosome, split the samples by sex, using 36 states
@@ -94,7 +90,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                        states = founders$states$X$F)
         tmp = hmm.intensity(data = cur.data, founders = cur.founders,
               sex = "F", snps = cur.snps, chr = curr.chr, 
-              trans.prob.fxn = trans.prob.fxn)
+              trans.prob.fxn = trans.prob.fxn, clust = clust)
         female.r.t.means  = tmp$params$r.t.means
         female.r.t.covars = tmp$params$r.t.covars
         female.prsmth = tmp$prsmth
@@ -129,7 +125,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
 
         tmp = hmm.intensity(data = cur.data, founders = cur.founders,
               sex = "M", snps = cur.snps, chr = curr.chr,
-              trans.prob.fxn = trans.prob.fxn)
+              trans.prob.fxn = trans.prob.fxn, clust = clust)
 
         male.r.t.means  = tmp$params$r.t.means
         male.r.t.covars = tmp$params$r.t.covars
@@ -202,8 +198,8 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
       } # for(i)
       d = d[!is.na(d[1,]), !is.na(d[,1])]
 
-      # Cluster using PAM.
-#      cl = pam(x = d, k = length(founders$states$founders), diss = TRUE)
+      # Cluster using CLARA.
+#      cl = pamk(x = d, usepam = FALSE)
   
       # Calculate means and covariances for each cluster.
 #      mean.covar = as.list(1:length(founders$states$founders))
@@ -232,7 +228,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
 
       hmm = hmm.intensity(data = data, founders = founders,
             sex = "F", snps = cur.snps, chr = curr.chr,
-            trans.prob.fxn = trans.prob.fxn)
+            trans.prob.fxn = trans.prob.fxn, clust = clust)
       founders$states = old.states
 
       # Write out the smoothed probabilities and the founder state means and 
@@ -242,6 +238,12 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                     theta.rho.covars = hmm$params$r.t.covars, 
                     output.dir = output.dir, chr = curr.chr, all.chr = chr)
     } # else
-	gc()
+
+    # Clean up memory.
+    gc()
+    # Make sure the foreach doesn't try to return something.
+    NULL
+
   } # for(chr)
+
 } # calc.genoprob.intensity()
