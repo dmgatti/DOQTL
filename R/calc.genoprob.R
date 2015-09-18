@@ -16,7 +16,7 @@
 #                   Universal Genotyping Arrays. Options are 'muga', 'megamuga',
 #                   or 'other'.
 #            sampletype: character, with the type of samples. Options are 'DO',
-#                        'CC', 'DOF1' or 'other'.
+#                        'CC', 'DOF1', 'HS' or 'other'.
 #            method: character, that inidicates the method of genotype reconstruction.
 #                    'intensity' uses X and Y array intensities and 'allele' uses
 #                    the genotype calls.
@@ -26,213 +26,140 @@
 #                        of SNPs on each chromosome.
 #            snps: data.frame with SNP IDs, chr, Mb and cM positions. For custom
 #                  arrays.
-calc.genoprob = function(data, chr = "all", output.dir = ".",
-                         plot = TRUE, array = c("megamuga", "muga", "other"),
-                         sampletype = c("DO", "CC", "DOF1", "other"), method =
-                         c("intensity", "allele"), founders, transprobs, snps) {
+calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE, 
+                         array = c("gigamuga", "megamuga", "muga", "other"),
+                         sampletype = c("DO", "CC", "DOF1", "HS", "HSrat", "other"),
+                         method = c("intensity", "allele"), clust = c("mclust", "pamk"),
+                         founders, transprobs, snps) {
 
   if(missing(data)) {
     stop(paste("data is missing. Please supply data to process."))
   } # if(missing(data))
 
-  if(!is.null(data$sex)) {
-    if(is.matrix(data$sex) || is.list(data$sex)) { 
-      nm = rownames(data$sex)
-      data$sex = as.character(data$sex[,1])
-      names(data$sex) = nm
-    }
-  } else {
+  if(is.null(data$sex)) {
     stop("data$sex cannot be null, even if all animals are the same sex.")
+  } else {
+    if(!is.vector(data$sex)) { 
+      stop("data$sex must be a vector containing only M and F with sample IDs in names.")
+    } # if(!is.vector(data$sex))
   } # else
 
   if(!is.null(data$gen)) {
-    if(is.matrix(data$gen) || is.list(data$gen)) { 
-      nm = rownames(data$gen)
-      data$gen = as.character(data$gen[,1])
-      names(data$gen) = nm
-    } # if(is.matrix(data$gen) || is.list(data$gen))
+    if(!is.vector(data$gen)) { 
+      stop("data$gen must be a vector containing only numbers with sample IDs in names.")
+    } # if(!is.vector(data$gen))
   } # if(!is.null(data$gen))
 
   method = match.arg(method)
   sampletype = match.arg(sampletype)
   array = match.arg(array)
+  clust = match.arg(clust)
   attr(data, "method") = method
   attr(data, "array")  = array
   attr(data, "sampletype") = sampletype
 
+  if(method == "allele") {
+
+    if(any(!c("geno", "sex", "gen") %in% names(data))) {
+      stop(paste("\'data\' does not contain an element called",
+           c("geno", "sex", "gen")[!c("geno", "sex", "gen") %in% names(data)],
+           ".\nPlease make sure that \'data\' contains three elements:",
+           "\'geno\', \'sex\' and \'gen\'."))
+    } # if(any(!c("geno", ...
+
+  } else if(method == "intensity") {
+    if(any(!c("x", "y", "sex", "gen") %in% names(data))) {
+      stop(paste("\'data\' does not contain an element called",
+           c("x", "y", "sex", "gen")[!c("x", "y", "sex", "gen") %in% names(data)],
+           ".\nPlease make sure that \'data\' contains three elements:",
+           "\'x\', \'y\', \'sex\' and \'gen\'."))
+    } # if(any(!c("x", "y", ...
+  } # else
+
   # If the sampletype is CC or DO and array is muga or megamuga, then get the 
   # founder data.
-  ### CC or DO ###
+############################
+############################
+###       CC or DO       ###
+############################
+############################
   if(sampletype == "CC" | sampletype == "DO") {
-    ### MUGA ###
-    if(array == "muga") {
-      # Get the MUGA SNPs and subset them to keep the ones that we use for 
-      # genotyping.
-	# We have to put this line in to satisfy R CMD build --as-cran
-      muga_snps = NULL
-      load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
-      snps = muga_snps
-      snps = snps[snps[,1] %in% muga.snps.to.keep,]
-      snps = snps[!is.na(snps[,4]),]
-      # We have to put this line in to satisfy R CMD build --as-cran
-      muga_sex  = NULL
-      muga_code = NULL
-      load(url("ftp://ftp.jax.org/MUGA/muga_sex.Rdata"))
-      load(url("ftp://ftp.jax.org/MUGA/muga_code.Rdata"))
-      
-      ### Allele Call ###
-      if(method == "allele") {
-        # We have to put this line in to satisfy R CMD build --as-cran
-        muga_geno = NULL
-        load(url("ftp://ftp.jax.org/MUGA/muga_geno.Rdata"))
-        founders = list(geno = t(muga_geno[rownames(muga_geno) %in% snps[,1],]),
-                        sex = muga_sex, code = muga_code,
-                        states = create.genotype.states(LETTERS[1:8]))
-        if(!"geno" %in% names(data)) {
-          stop(paste("There is no item called 'geno' in the data list. Please",
-               "add the allele calls in a matrix called 'geno' when method",
-               "= 'alelle'."))
-        } else {
-          # Align the SNPs in the data and founders.
-          keep = intersect(intersect(snps[,1], colnames(data$geno)), colnames(founders$geno))
-          data$geno = as.matrix(data$geno[,colnames(data$geno) %in% keep])
-          founders$geno = as.matrix(founders$geno[,colnames(founders$geno) %in% keep])
-          snps = snps[snps[,1] %in% keep,]
-          data$geno = data$geno[,match(snps[,1], colnames(data$geno))]
-          founders$geno = founders$geno[,match(snps[,1], colnames(founders$geno))]
+
+    ### MUGA Series Arrays ###
+    if(array %in% c("gigamuga", "megamuga", "muga")) { 
+
+      founders = read.muga.data(array = array, method = method)
+      snps = founders$snps
+
+      if(array == "muga") {
+
+        # Get the MUGA SNPs and subset them to keep the ones that we use for 
+        # genotyping.
+        snps = snps[snps[,1] %in% muga.snps.to.keep,]
+        snps = snps[!is.na(snps[,4]),1:4]
+
+      ### MegaMUGA ###
+      } else if(array == "megamuga") {
+
+        # Get the MUGA SNPs and subset them to keep the ones that we use for 
+        # genotyping.
+        snps = snps[snps$Collaborative.Cross == 1,]
+        snps = snps[!is.na(snps[,4]),1:4]
+
+        # Remove founders with too much missing data.
+        if(method == "allele") {
+
+          # Remove founders with too much missing data.
+          remove = which(colMeans(founders$geno == "N") > 0.05)
+          founders$geno = founders$geno[,-remove]
+          founders$sex  = founders$sex[-remove]
+          founders$code = founders$code[-remove]
+
+        } else if(method == "intensity") {
+
+          # Remove founders with too much missing data.
+          remove = which(colSums(founders$x < 0) > 1000)
+          if(length(remove) > 0) {
+            founders$x = founders$x[,-remove]
+            founders$y = founders$y[,-remove]
+            founders$sex  = founders$sex[-remove]
+            founders$code = founders$code[-remove]
+          } # if(length(remove) > 0)
+
         } # else
-     ### Intensity ###
+
+      ### GigaMUGA ###
+      } else if(array == "gigamuga") {
+
+        snps = snps[grep("^(B6|JAX|ICR|UNC|Xi)", snps[,1]),]
+
+        # Make sure that the marker positions always increase.
+        for(i in 2:nrow(snps)) {
+          if(snps[i-1,2] == snps[i,2]) {  
+            if(snps[i,3] <= snps[i-1,3]) {
+              snps[i,3] = snps[i-1,3] + 0.001
+            } # if(snps[i,3] <= snps[i-1,3])
+          } # if(snps[i-1,2] == snps[i,2])
+        } # for(i)
+
+      } # else if(array == "gigamuga")
+
+      founders = founders[names(founders) != "snps"]
+
+      # Keep only the DO founders.
+      founders = keep.do.founders(founders)
+
+      # Add the genotype states.
+      if(method == "allele") {
+        founders = list(geno = founders$geno, sex = founders$sex, code = founders$code,
+                   states = create.genotype.states(LETTERS[1:8]))
       } else {
-
-        # We have to put this line in to satisfy R CMD build --as-cran
-        muga_x = NULL
-        muga_y = NULL
-
-        load(url("ftp://ftp.jax.org/MUGA/muga_x.Rdata"))
-        load(url("ftp://ftp.jax.org/MUGA/muga_y.Rdata"))
-        founders = list(x = t(muga_x[rownames(muga_x) %in% snps[,1],]),
-                        y = t(muga_y[rownames(muga_y) %in% snps[,1],]), 
-                        sex = muga_sex, code = muga_code,
-                        states = create.genotype.states(LETTERS[1:8]))
-
-        if(!"x" %in% names(data) | !"y" %in% names(data)) {
-          stop(paste("There 'x' or 'y' matrices are missing from the data list.",
-               "Please add the X and Y intensities in matrices called 'x' and 'y'",
-               "when method = 'intensity'."))
-        } else {
-          # Align the SNPs in the data and founders.
-          keep = intersect(intersect(snps[,1], colnames(data$x)), colnames(founders$x))
-          data$x = as.matrix(data$x[,colnames(data$x) %in% keep])
-          data$y = as.matrix(data$y[,colnames(data$y) %in% keep])
-          founders$x = as.matrix(founders$x[,colnames(founders$x) %in% keep])
-          founders$y = as.matrix(founders$y[,colnames(founders$y) %in% keep])
-          snps = snps[snps[,1] %in% keep,]
-          data$x = data$x[,match(snps[,1], colnames(data$x))]
-          data$y = data$y[,match(snps[,1], colnames(data$y))]
-          founders$x = founders$x[,match(snps[,1], colnames(founders$x))]
-          founders$y = founders$y[,match(snps[,1], colnames(founders$y))]
-        } # else
+        founders = list(x = founders$x, y = founders$y, sex = founders$sex,
+                   code = founders$code, states = create.genotype.states(LETTERS[1:8]))
       } # else
-
-    ### MegaMUGA ###
-    } else if(array == "megamuga") {
-      
-      # Get the SNPs on the MegaMUGA and subset them to keep the ones for
-      # the CC/DO mice.
-      # We have to put this line in to satisfy R CMD build --as-cran
-      MM_snps = NULL
-      load(url("ftp://ftp.jax.org/MUGA/MM_snps.Rdata"))
-      snps = MM_snps
-
-      # Keep only the collaborative cross SNPs.
-#      snps = snps[snps$Collaborative.Cross == 1 | snps$MUGA == 1 |
-#	              snps$C57BL.6 == 1,]
-      snps = snps[snps$Collaborative.Cross == 1,]
-
-      snps = snps[!is.na(snps[,4]),]
-      snps = snps[,1:4]
-
-      # We have to put this line in to satisfy R CMD build --as-cran
-      MM_sex = NULL
-      MM_code = NULL
-      load(url("ftp://ftp.jax.org/MUGA/MM_sex.Rdata"))
-      load(url("ftp://ftp.jax.org/MUGA/MM_code.Rdata"))
- 
-     ### Allelle Call ###
-      if(method == "allele") {
-        # We have to put this line in to satisfy R CMD build --as-cran
-        MM_geno = NULL
-        load(url("ftp://ftp.jax.org/MUGA/MM_geno.Rdata"))
-        # Remove founders with too much missing data.
-        remove = which(colSums(MM_geno == "N") > 5000)
-        MM_geno = MM_geno[,-remove]
-        MM_sex  = MM_sex[-remove]
-        MM_code = MM_code[-remove]
-        founders = list(geno = t(MM_geno[rownames(MM_geno) %in% snps[,1],]),
-                        sex = MM_sex, code = MM_code,
-                        states = create.genotype.states(LETTERS[1:8]))
-        keep = which(!is.na(MM_code))
-        founders$geno = founders$geno[keep,]
-        founders$sex  = founders$sex[keep]
-        founders$code = founders$code[keep]
-        # Align the SNPs in the data and founders.
-        keep = intersect(intersect(snps[,1], colnames(data$geno)), colnames(founders$geno))
-        data$geno = as.matrix(data$geno[,colnames(data$geno) %in% keep])
-        founders$geno = as.matrix(founders$geno[,colnames(founders$geno) %in% keep])
-        snps = snps[snps[,1] %in% keep,]
-        data$geno = data$geno[,match(snps[,1], colnames(data$geno))]
-        founders$geno = founders$geno[,match(snps[,1], colnames(founders$geno))]
-        data$geno = as.matrix(data$geno[,colnames(data$geno) %in% snps[,1]])
-        snps = snps[snps[,1] %in% colnames(data$geno),]
-        rm(MM_geno)
-
-      ### Intensity ###
-      } else if(method == "intensity") {
-
-        # We have to put this line in to satisfy R CMD build --as-cran
-        MM_x = NULL
-        MM_y = NULL
-        load(url("ftp://ftp.jax.org/MUGA/MM_x.Rdata"))
-        load(url("ftp://ftp.jax.org/MUGA/MM_y.Rdata"))
-        # Remove founders with too much missing data.
-        remove = which(colSums(MM_x < 0) > 1000)
-        MM_x = MM_x[,-remove]
-        MM_y = MM_y[,-remove]
-        MM_sex  = MM_sex[-remove]
-        MM_code = MM_code[-remove]
-        founders = list(x = t(MM_x[rownames(MM_x) %in% snps[,1],]), 
-                        y = t(MM_y[rownames(MM_y) %in% snps[,1],]),
-                        sex = MM_sex, code = MM_code,
-                        states = create.genotype.states(LETTERS[1:8]))
-        keep = which(!is.na(MM_code))
-        founders$x = founders$x[keep,]
-        founders$y = founders$y[keep,]
-        founders$sex  = founders$sex[keep]
-        founders$code = founders$code[keep]
-        # Align the SNPs in the data and founders.
-        keep = intersect(intersect(snps[,1], colnames(data$x)), colnames(founders$x))
-        data$x = as.matrix(data$x[,colnames(data$x) %in% keep])
-        data$y = as.matrix(data$y[,colnames(data$y) %in% keep])
-        founders$x = as.matrix(founders$x[,colnames(founders$x) %in% keep])
-        founders$y = as.matrix(founders$y[,colnames(founders$y) %in% keep])
-        snps = snps[snps[,1] %in% keep,]
-        data$x = data$x[,match(snps[,1], colnames(data$x))]
-        data$y = data$y[,match(snps[,1], colnames(data$y))]
-        founders$x = founders$x[,match(snps[,1], colnames(founders$x))]
-        founders$y = founders$y[,match(snps[,1], colnames(founders$y))]
-        if(!all(colnames(data$x) == colnames(founders$x))) {
-          stop("SNP names in data$x and founders$x do not match for MegaMUGA.")
-        } # if(!all(colnames(data$x) == colnames(founder$x)))
-        if(!all(colnames(data$y) == colnames(founders$y))) {
-          stop("SNP names in data$y and founders$y do not match for MegaMUGA.")
-        } # if(!all(colnames(data$y) == colnames(founder$y)))
-        
-        rm(MM_x, MM_y)
-      } # else
-      rm(MM_sex, MM_code)
       attr(founders, "method") = method
 
-    ### Custome Array ###
+    ### Custom Array ###
     } else {
 
       # array = 'other'
@@ -249,48 +176,48 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
 
       ### Allele Call ###
       if(method == "allele") {
+
         founders = list(geno = founders$geno, sex = founders$sex,
                    code = founders$code, states = 
                    create.genotype.states(LETTERS[1:8]))
-        # Synch up the SNPs in the data.
-        founders$geno = founders$geno[,colnames(founders$geno) %in% snps[,1]]
-        data$geno = data$geno[,colnames(data$geno) %in% snps[,1]]
-        snps = snps[snps[,1] %in% colnames(founders$geno),]
-        founders$geno = as.matrix(founders$geno)
+
         # This is needed because the as.matrix() function keeps stripping the
         # rownames!
         rn = rownames(data$geno)
         data$geno = as.matrix(data$geno)
         rownames(data$geno) = rn
+
         if(!all(snps[,1] == colnames(data$geno))) {
           stop(paste("The SNP names in the snps argument do not match the SNP",
                "names in the data."))
         } # if(!all(snps[,1] == colnames(data$geno)))
+
         if(!all(snps[,1] == colnames(founders$geno))) {
           stop(paste("The SNP names in the snps argument do not match the SNP",
                "names in the founders."))
         } # if(!all(snps[,1] == colnames(founders$geno)))
+
       ### Intensity ###
+
       } else if(method == "intensity") {
+
         founders = list(x = founders$x, y = founders$y,
                    code = founders$code, sex = founders$sex, states = 
                    create.genotype.states(LETTERS[1:8]))
-        # Synch up the SNPs in the data.
-        founders$x = as.matrix(founders$x[,colnames(founders$x) %in% snps[,1]])
-        founders$y = as.matrix(founders$y[,colnames(founders$y) %in% snps[,1]])
-        data$x = as.matrix(data$x[,colnames(data$x) %in% snps[,1]])
-        data$y = as.matrix(data$y[,colnames(data$y) %in% snps[,1]])
-        snps = snps[snps[,1] %in% colnames(founders$x),]
+
         if(!all(snps[,1] == colnames(data$x))) {
           stop(paste("The SNP names in the snps argument do not match the SNP",
                "names in the data."))
         } # if(!all(snps[,1] == colnames(data$x)))
+
         if(!all(snps[,1] == colnames(founders$x))) {
           stop(paste("The SNP names in the snps argument do not match the SNP",
                "names in the founders."))
         } # if(!all(snps[,1] == colnames(founders$x)))
+
       } # else if(method == "intensity")
     } # else
+
     # Get the outbreeding generation for the DO.
     if(sampletype == "DO") {
       if(!"gen" %in% names(data)) {
@@ -304,19 +231,21 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
         names(data$gen)= nm
       } # else
     } # if(sampletype == "DO")
-
-  ### DO/F1 ###
+###############
+###  DO/F1  ###
+###############
   } else if (sampletype == "DOF1") {
 
-    ### MegaMUGA ###
-    if(array == "megamuga" ) {
+    # Users must provide genotypes for the mutant founders.
+    mut.founders = founders
 
-      # Get the SNPs on the MegaMUGA and subset them to keep the ones for
-      # the CC/DO mice.
-      # We have to put this line in to satisfy R CMD build --as-cran
-      MM_snps = NULL
-      load(url("ftp://ftp.jax.org/MUGA/MM_snps.Rdata"))
-      snps = MM_snps
+    # Get the DO founders from the website.
+    founders = read.muga.data(array = array, method = method)
+    snps = founders$snps
+
+    ### MegaMUGA ###
+    if(array == "megamuga") {
+
       # Keep only the collaborative cross SNPs.
 #      snps = snps[snps$Collaborative.Cross == 1 | snps$MUGA == 1 |
 #	              snps$C57BL.6 == 1,]
@@ -324,152 +253,128 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
       snps = snps[!is.na(snps[,4]) | snps[,2] == "Y",]
       snps = snps[,1:4]
 
-      # We have to put this line in to satisfy R CMD build --as-cran
-      MM_sex = NULL
-      MM_code = NULL
-      load(url("ftp://ftp.jax.org/MUGA/MM_sex.Rdata"))
-      load(url("ftp://ftp.jax.org/MUGA/MM_code.Rdata"))
-
       ### Allele Call ###
       if(method == "allele") {
 
-        # We have to put this line in to satisfy R CMD build --as-cran
-        MM_geno = NULL
-        load(url("ftp://ftp.jax.org/MUGA/MM_geno.Rdata"))
         # Remove founders with too much missing data.
-        remove = which(colSums(MM_geno == "N") > 5000)
-        MM_geno = MM_geno[,-remove]
-        MM_sex  = MM_sex[-remove]
-        MM_code = MM_code[-remove]
+        remove = which(colSums(founders$geno == "N") > 5000)
+        founders$geno = founders$geno[,-remove]
+        founders$sex  = founders$sex[-remove]
+        founders$code = founders$code[-remove]
 
-        founders = list(geno = t(MM_geno[rownames(MM_geno) %in% snps[,1],]),
-                        sex = MM_sex, code = MM_code,
+        founders = list(geno = t(founders$geno[rownames(founders$geno) %in% snps[,1],]),
+                        sex = founders$sex, code = founders$code,
                         states = create.genotype.states(LETTERS[1:8]),
                         direction = founders$direction)
-        keep = which(!is.na(MM_code))
+        keep = which(!is.na(founders$code))
         founders$geno = founders$geno[keep,]
         founders$sex  = founders$sex[keep]
         founders$code = founders$code[keep]
 
-        # Align the SNPs in the data and founders.
-        keep = intersect(intersect(snps[,1], colnames(data$geno)), colnames(founders$geno))
-        data$geno = as.matrix(data$geno[,colnames(data$geno) %in% keep])
-        founders$geno = as.matrix(founders$geno[,colnames(founders$geno) %in% keep])
-        snps = snps[snps[,1] %in% keep,]
-        data$geno = data$geno[,match(snps[,1], colnames(data$geno))]
-        founders$geno = founders$geno[,match(snps[,1], colnames(founders$geno))]
-        data$geno = as.matrix(data$geno[,colnames(data$geno) %in% snps[,1]])
-        snps = snps[snps[,1] %in% colnames(data$geno),]
-
-        rm(MM_geno)
+        # Add the mutant founders to the founders.
+        founders$geno = cbind(mut.founders$geno, founders$geno)
 
       ### Intensity ###
       } else if(method == "intensity") {
 
-        # We have to put this line in to satisfy R CMD build --as-cran
-        MM_x = NULL
-        MM_y = NULL
-        load(url("ftp://ftp.jax.org/MUGA/MM_x.Rdata"))
-        load(url("ftp://ftp.jax.org/MUGA/MM_y.Rdata"))
-
-        # Transpose the MegaMUGA founder data.
-        MM_x = t(MM_x)
-        MM_y = t(MM_y)
-
         # Remove founders with too much missing data.
-        remove = which(rowSums(MM_x < 0) > 1000)
-        MM_x = MM_x[-remove,]
-        MM_y = MM_y[-remove,]
-        MM_sex  = MM_sex[-remove]
-        MM_code = MM_code[-remove]
+        remove = which(rowSums(founders$x < 0) > 1000)
+        founders$x = founders$x[-remove,]
+        founders$y = founders$y[-remove,]
+        founders$sex  = founders$sex[-remove]
+        founders$code = founders$code[-remove]
 
         # Remove founders with NA founder codes (i.e. non-DO founders)
-        remove = which(is.na(MM_code))
-        MM_x = MM_x[-remove,]
-        MM_y = MM_y[-remove,]
-        MM_sex  = MM_sex[-remove]
-        MM_code = MM_code[-remove]
+        remove = which(is.na(founders$code))
+        founders$x = founders$x[-remove,]
+        founders$y = founders$y[-remove,]
+        founders$sex  = founders$sex[-remove]
+        founders$code = founders$code[-remove]
 
         # Keep only the inbred founders and discard the F1s.
-        MM_code = MM_code[MM_code %in% paste(LETTERS[1:8], LETTERS[1:8], sep = "")]
-        MM_x = MM_x[rownames(MM_x) %in% names(MM_code),]
-        MM_y = MM_y[rownames(MM_y) %in% names(MM_code),]
-        MM_sex = MM_sex[names(MM_sex) %in% names(MM_code)]
+        founders$code = founders$code[founders$code %in% paste(LETTERS[1:8], LETTERS[1:8], sep = "")]
+        founders$x = founders$x[rownames(founders$x) %in% names(founders$code),]
+        founders$y = founders$y[rownames(founders$y) %in% names(founders$code),]
+        founders$sex = founders$sex[names(founders$sex) %in% names(founders$code)]
 
-        # Synch up the markers in both founder data sets.
-        markers = intersect(colnames(MM_x), colnames(founders$x))
-        MM_x = MM_x[,colnames(MM_x) %in% markers]
-        MM_y = MM_y[,colnames(MM_y) %in% markers]
-        founders$x = founders$x[,colnames(founders$x) %in% markers]
-        founders$y = founders$y[,colnames(founders$y) %in% markers]
-        rm(markers)
+        stopifnot(all(colnames(founders$x) == colnames(founders$x)))
+        stopifnot(all(colnames(founders$y) == colnames(founders$y)))
 
-        stopifnot(all(colnames(MM_x) == colnames(founders$x)))
-        stopifnot(all(colnames(MM_y) == colnames(founders$y)))
-
-        # Create a new founders list with the 9th founder added.
-        x = rbind(MM_x, founders$x)
-        y = rbind(MM_y, founders$y)
-        sex  = c(MM_sex,  founders$sex)
-        code = c(MM_code, founders$code)
-        states = paste(LETTERS[1:8], "I", sep = "")
-        if(founders$direction == "DOxMUT") {
-          states = list(auto = states, X = list(F = states, M = LETTERS[1:8]),
-                   founders = LETTERS[1:9])
-        } else if(founders$direction == "MUTxDO") {
-          states = list(auto = states, X = list(F = states, M = "I"),
-                   founders = LETTERS[1:9])
-        } else {
-          stop(paste("founders$direction =", founders$direction, 
-               ". founders$direction must be either MUTxDO or DOxMUT. See",
-               "help(calc.genoprob) for more information."))
-        } # else
-
-        founders = list(x = x, y = y, sex = sex, code = code,
-                        states = states, direction = founders$direction)
-        rm(x, y, sex, code, states)
-
-        # Align the SNPs in the data and founders.
-        keep = intersect(intersect(snps[,1], colnames(data$x)), colnames(founders$x))
-        data$x = as.matrix(data$x[,colnames(data$x) %in% keep])
-        data$y = as.matrix(data$y[,colnames(data$y) %in% keep])
-        founders$x = as.matrix(founders$x[,colnames(founders$x) %in% keep])
-        founders$y = as.matrix(founders$y[,colnames(founders$y) %in% keep])
-        snps = snps[snps[,1] %in% keep,]
-
-        data$x = data$x[,match(snps[,1], colnames(data$x))]
-        data$y = data$y[,match(snps[,1], colnames(data$y))]
-        founders$x = founders$x[,match(snps[,1], colnames(founders$x))]
-        founders$y = founders$y[,match(snps[,1], colnames(founders$y))]
+        # Add the mutant founders to the founders.
+        founders$geno = cbind(mut.founders$geno, founders$geno)
 
         if(!all(colnames(data$x) == colnames(founders$x))) {
-          stop("SNP names in data$x and founders$x do not match for MegaMUGA.")
-        } # if(!all(colnames(data$x) == colnames(founder$x)))
+          stop("calc.genoprob: SNP names in data$x and founders$x do not match for MegaMUGA.")
+        } # if(!all(colnames(data$x) == colnames(founders$x)))
+
         if(!all(colnames(data$y) == colnames(founders$y))) {
-          stop("SNP names in data$y and founders$y do not match for MegaMUGA.")
-        } # if(!all(colnames(data$y) == colnames(founder$y)))
-        
-        rm(MM_x, MM_y)
+          stop("calc.genoprob: SNP names in data$y and founders$y do not match for MegaMUGA.")
+        } # if(!all(colnames(data$y) == colnames(founders$y)))
 
       } # else
 
-      rm(MM_sex, MM_code)
+      founders$sex  = cbind(mut.founders$sex, founders$sex)
+      founders$code = cbind(mut.founders$code, founders$code)
+
+      states = paste(LETTERS[1:8], "I", sep = "")
+      if(founders$direction == "DOxMUT") {
+        states = list(auto = states, X = list(F = states, M = LETTERS[1:8]),
+                 founders = LETTERS[1:9])
+      } else if(founders$direction == "MUTxDO") {
+        states = list(auto = states, X = list(F = states, M = "I"),
+                 founders = LETTERS[1:9])
+      } else {
+        stop(paste("calc.genoprob: founders$direction =", founders$direction, 
+             ". founders$direction must be either MUTxDO or DOxMUT. See",
+             "help(calc.genoprob) for more information."))
+      } # else
+
+      founders = list(x = x, y = y, sex = sex, code = code,
+                      states = states, direction = founders$direction)
       attr(founders, "method") = method
 
     } else {
 
-      stop(paste("Unsupported array platform:", array))
+      stop(paste("calc.genoprob: Unsupported array platform:", array))
 
     } # else
-  } else {
+  } else if(sampletype == "HS") {
 
-    stop("Non-CC and non-DO samples not implemented yet.")
-    # The user is going to have to supply everything: SNPs, founders & trans.probs.
+    # In this case, we require the user to supply founders and markers.
+
+
+  } else {
+###############################
+### All other sample types. ###
+###############################
+    # We require the user to provide the founder data and markers.
+    if(missing(founders)) {
+      stop("Founder data missing. Founder data must be provided for non-DO samples.")
+    } # if(missing(founders))
+
+    if(missing(snps)) {
+      stop("Markes missing. Markers must be provided for non-DO samples.")
+    } # if(missing(snps))
+
+    if(method == "allele") {
+      fnames = c("geno", "sex", "code", "states")
+      if(any(!names(founders) %in% fnames)) {
+        wh = fnames[!fnames %in% names(founders)]
+        print(paste("Required list elements called", wh,
+              "were not found in the founder data. Please include these elements."))
+      } # if(any(!names(founders) %in% fnames))
+    } else {
+      fnames = c("x", "y", "sex", "code", "states")
+      if(any(!names(founders) %in% fnames)) {
+        wh = fnames[!fnames %in% names(founders)]
+        print(paste("Required list elements called", wh,
+              "were not found in the founder data. Please include these elements."))
+      } # if(any(!names(founders) %in% fnames))
+    } # else
 
   } # else
 
   # Set sex identifiers to upper case.
-  data$sex = as.matrix(data$sex)
   data$sex = toupper(data$sex)
   founders$sex = toupper(founders$sex)
 
@@ -479,9 +384,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
 
   # Fill in any missing F1s.
   attr(founders, "method") = attr(data, "method")
-  if(sampletype != "DOF1") {
-    founders = add.missing.F1s(founders, snps)
-  } # if(sampletype != "DOF1")
+  founders = add.missing.F1s(founders, snps, sampletype)
 
   # Add a slash to the output directory, if required.
   output.dir = add.slash(output.dir)
@@ -493,6 +396,8 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
     trans.prob.fxn = cc.trans.probs
   } else if(sampletype == "DOF1") {
     trans.prob.fxn = dof1.trans.probs
+  } else if(sampletype == "HS" | sampletype == "HSrat") {
+    trans.prob.fxn = hs.trans.probs
   } else if(sampletype == "other") {
     trans.prob.fxn = generic.trans.probs
   } # else
@@ -510,12 +415,37 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
           "increases monotonically."))
   } # if(any(sapply(tmp, "<" 0))
 
+  # If chr == all, then change the chr value to the chromosomes we have.
+  if(chr == "all") {
+    chr = unique(snps[,2])
+  } # if(chr == "all")
+
+  # Subset the markers to include only the chromosomes that we are running.
+  snps = snps[snps[,2] %in% chr,]
+
+  # Synchronize the markers in the allele calls and snps.
+  tmp = synchronize.snps(snps, data, founders)
+  data = tmp$data
+  founders = tmp$founders
+  snps = tmp$markers
+  rm(tmp)
+  gc()
+
+  # Make the names unique.
+  names(data$sex) = make.unique(make.names(names(data$sex)))
+  if(attr(data, "sampletype") %in% c("DO", "DOF1", "HS", "HSrat")) {
+    names(data$gen) = make.names(names(data$gen))
+  } # if(attr(data, "sampletype") == "DO")
+
   if(method == "allele") {
+
+     # Verify that the allele calls are the same in the data and
+     # founders.
+     check.alleles(data = data, founders = founders)
 
      # Convert the sample names into names that can be written out 
      # as files.
-     rownames(data$geno) = make.names(rownames(data$geno))
-     names(data$sex) = make.names(names(data$sex))
+     rownames(data$geno) = make.unique(make.names(rownames(data$geno)))
 
      if(attr(data, "sampletype") == "DO") {
        names(data$gen) = make.names(names(data$gen))
@@ -545,20 +475,28 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
      snps = snps[order(as.numeric(names(snps)))]
      options(warn = old.warn)
      gc()
+
      calc.genoprob.alleles(data = data, chr = chr, founders = founders, snps = snps,
                            output.dir = output.dir, trans.prob.fxn = trans.prob.fxn,
                            plot = plot)
 
   } else if(method == "intensity") {
 
+     if(any(!is.nan(founders$x))) {
+       print("NaN values in founder X intensities.")
+     } # if(any(!is.nan(founders$x)))
+
+     if(any(!is.nan(founders$y))) {
+       print("NaN values in founder Y intensities.")
+     } # if(any(!is.nan(founders$y)))
+
+     stopifnot(ncol(data$x) > 0 & ncol(data$y) > 0)
+     stopifnot(ncol(founders$x) > 0 & ncol(founders$y) > 0)
+
      # Convert the sample names into names that can be written out 
      # as files.
-     rownames(data$x) = make.names(rownames(data$x))
-     rownames(data$y) = make.names(rownames(data$y))
-     names(data$sex) = make.names(names(data$sex))
-     if(attr(data, "sampletype") %in% c("DO", "DOF1")) {
-       names(data$gen) = make.names(names(data$gen))
-     } # if(attr(data, "sampletype") == "DO")
+     rownames(data$x) = make.unique(make.names(rownames(data$x)))
+     rownames(data$y) = make.unique(make.names(rownames(data$y)))
 
      # Split up the data by chromosome.
      tmpdir = tempdir()
@@ -598,33 +536,331 @@ calc.genoprob = function(data, chr = "all", output.dir = ".",
 
      calc.genoprob.intensity(data = data, chr = chr, founders = founders, 
                              snps = snps, output.dir = output.dir, 
-                             trans.prob.fxn = trans.prob.fxn, plot = plot)
+                             trans.prob.fxn = trans.prob.fxn, plot = plot, clust = clust)
 
   } # else if(method = "intensity")
 
   # Convert the *.genotype.probs.txt files to *.Rdata files.
   create.Rdata.files(dir(path = output.dir, pattern = "genotype.probs.txt",
-                     full.names = TRUE))
+                     full.names = TRUE), cross = sampletype)
 
   # Create a single founder allele probability file.
   if(sampletype == "DOF1") {
 
     condense.model.probs(path = output.dir, write = paste(output.dir,
-                         "founder.probs.Rdata", sep = "/"), model = "full")
+                         "founder.probs.Rdata", sep = "/"), model = "full",
+                         cross = sampletype)
 
   } else {
 
     condense.model.probs(path = output.dir, write = paste(output.dir,
-                         "founder.probs.Rdata", sep = "/"))
+                         "founder.probs.Rdata", sep = "/"), cross = sampletype)
 
   } # else
  
   # Create genotype plots if the user requested it.
   if(plot) {
 
-    load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
-    write.genoprob.plots(path = output.dir, snps = muga_snps)
+    write.genoprob.plots(path = output.dir, snps = snps)
 
   } # if(plot)
 
 } # calc.genoprob()
+
+
+################################################################################
+# Helper functions.
+read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
+                 method = c("intensity", "allele", "both"),
+                 sampletype = c("DO", "CC", "HS")) {
+
+  retval = as.list(rep(NA, 6))
+  names(retval)= c("snps", "sex", "code", "x", "y", "geno")
+
+  array  = match.arg(array)
+  method = match.arg(method)
+  sampletype = match.arg(sampletype )
+
+  snpfile  = NULL
+  sexfile  = NULL
+  codefile = NULL
+  xfile    = NULL
+  yfile    = NULL
+  genofile = NULL
+
+  if(array == "muga") {
+
+    snpfile  = "ftp://ftp.jax.org/MUGA/muga_snps.Rdata"
+    sexfile  = "ftp://ftp.jax.org/MUGA/muga_sex.Rdata"
+    codefile = "ftp://ftp.jax.org/MUGA/muga_code.Rdata"
+    xfile    = "ftp://ftp.jax.org/MUGA/muga_x.Rdata"
+    yfile    = "ftp://ftp.jax.org/MUGA/muga_y.Rdata"
+    genofile = "ftp://ftp.jax.org/MUGA/muga_geno.Rdata"
+
+    if(sampletype == "HS") { 
+      codefile = "ftp://ftp.jax.org/MUGA/muga_hs_code.Rdata"
+    } # if(sampletype == "HS")
+
+  } else if(array == "megamuga") {
+
+    snpfile  = "ftp://ftp.jax.org/MUGA/MM_snps.Rdata"
+    sexfile  = "ftp://ftp.jax.org/MUGA/MM_sex.Rdata"
+    codefile = "ftp://ftp.jax.org/MUGA/MM_code.Rdata"
+    xfile    = "ftp://ftp.jax.org/MUGA/MM_x.Rdata"
+    yfile    = "ftp://ftp.jax.org/MUGA/MM_y.Rdata"
+    genofile = "ftp://ftp.jax.org/MUGA/MM_geno.Rdata"
+
+    if(sampletype == "HS") { 
+      codefile = "ftp://ftp.jax.org/MUGA/MM_hs_code.Rdata"
+    } # if(sampletype == "HS")
+
+  } else if(array == "gigamuga") {
+
+    snpfile  = "ftp://ftp.jax.org/MUGA/GM_snps.Rdata"
+    sexfile  = "ftp://ftp.jax.org/MUGA/GM_sex.Rdata"
+    codefile = "ftp://ftp.jax.org/MUGA/GM_code.Rdata"
+    xfile    = "ftp://ftp.jax.org/MUGA/GM_x.Rdata"
+    yfile    = "ftp://ftp.jax.org/MUGA/GM_y.Rdata"
+    genofile = "ftp://ftp.jax.org/MUGA/GM_geno.Rdata"
+
+    if(sampletype == "HS") { 
+      codefile = "ftp://ftp.jax.org/MUGA/GM_hs_code.Rdata"
+    } # if(sampletype == "HS")
+
+  } else {
+    stop(paste("read.muga.data: Unknown array:", array))
+  } # else
+
+  if(array == "muga") {
+
+    # Get the MUGA SNPs and subset them to keep the ones that we use for 
+    # genotyping.
+    # We have to put this line in to satisfy R CMD build --as-cran
+    muga_snps = NULL
+    load(url(snpfile))
+    snps = muga_snps
+    snps = snps[snps[,1] %in% muga.snps.to.keep,]
+    snps = snps[!is.na(snps[,4]),]
+
+    # We have to put this line in to satisfy R CMD build --as-cran
+    muga_sex  = NULL
+    muga_code = NULL
+    load(url(sexfile))
+    load(url(codefile))
+
+    retval[[1]] = snps
+    retval[[2]] = muga_sex
+    retval[[3]] = muga_code
+
+    if(method == "intensity" | method == "both") {
+
+      muga_x = NULL
+      muga_y = NULL
+      load(url(xfile))
+      load(url(yfile))
+
+      retval[[4]] = t(muga_x)
+      retval[[5]] = t(muga_y)
+
+    } # if(method == "intensity" | method == "both")
+
+    if(method == "allele" | method == "both") {
+
+      muga_geno = NULL
+      load(url(genofile))
+
+      retval[[6]] = t(muga_geno)
+
+    } # if(method == "allele" | method == "both")
+
+  } else if(array == "megamuga") {
+
+    # Get the MegaMUGA SNPs and subset them to keep the ones that we use for 
+    # genotyping.
+    # We have to put this line in to satisfy R CMD build --as-cran
+    MM_snps = NULL
+    load(url(snpfile))
+    snps = MM_snps
+    snps = snps[!is.na(snps[,4]),]
+
+    # We have to put this line in to satisfy R CMD build --as-cran
+    MM_sex  = NULL
+    MM_code = NULL
+    load(url(sexfile))
+    load(url(codefile))
+
+    retval[[1]] = snps
+    retval[[2]] = MM_sex
+    retval[[3]] = MM_code
+
+    if(method == "intensity" | method == "both") {
+
+      MM_x = NULL
+      MM_y = NULL
+      load(url(xfile))
+      load(url(yfile))
+
+      retval[[4]] = t(MM_x)
+      retval[[5]] = t(MM_y)
+
+    } # if(method == "intensities" | method == "both")
+
+    if(method == "allele" | method == "both") {
+
+      muga_geno = NULL
+      load(url(genofile))
+      retval[[6]] = t(MM_geno)
+
+    } # if(method == "allele" | method == "both")
+
+  } else if(array == "gigamuga") {
+
+    # Get the GigaMUGA SNPs and subset them to keep the ones that we use for 
+    # genotyping.
+    # We have to put this line in to satisfy R CMD build --as-cran
+    GM_snps = NULL
+    load(url(snpfile))
+    snps = GM_snps
+    snps = snps[!is.na(snps[,4]),]
+    snps = snps[snps[,3] > 0,]
+
+    # We have to put this line in to satisfy R CMD build --as-cran
+    GM_sex  = NULL
+    GM_code = NULL
+    load(url(sexfile))
+    load(url(codefile))
+
+    retval[[1]] = snps
+    retval[[2]] = GM_sex
+    retval[[3]] = GM_code
+
+    if(method == "intensity" | method == "both") {
+
+      GM_x = NULL
+      GM_y = NULL
+      load(url(xfile))
+      load(url(yfile))
+
+      retval[[4]] = t(GM_x)
+      retval[[5]] = t(GM_y)
+
+    } # if(method == "intensities" | method == "both")
+
+    if(method == "allele" | method == "both") {
+
+      GM_geno = NULL
+      load(url(genofile))
+
+      retval[[6]] = t(GM_geno)
+
+    } # if(method == "allele" | method == "both")
+
+  } else {
+    stop(paste("read.muga.data: Unknown array:", array))
+  } # else
+
+  retval[!is.na(retval)]          
+
+} # read.muga.data()
+
+
+# Synch up the SNPs in snps and the data list passed in.
+# snps: data.frame containing 4 columns: marker ID, chr, Mb position, cM position.
+# data: The data list that contains either x and y or geno, sex and generation.
+# founders: The founders list that contains either x and y or geno, sex and code.
+synchronize.snps = function(markers, data, founders) {
+
+  # Figure out which list elements are matrices in data and founders.
+  data.wh     = which(!sapply(sapply(data, dim), is.null))
+  founders.wh = which(!sapply(sapply(founders, dim), is.null))
+
+  if(length(data.wh) == 0) {
+    stop(paste("The data list does not contain any matrices. It must",
+         "contain either x and y matrices or a geno matrix."))
+  } # if(length(data.wh) == 0)
+
+  if(length(founders.wh) == 0) {
+    stop(paste("The founder list does not contain any matrices. It must",
+         "contain either x and y matrices or a geno matrix."))
+  } # if(length(data.wh) == 0)
+
+  # Get common markers.
+  id = markers[,1]
+  for(i in 1:length(data.wh)) {
+    id = intersect(id, colnames(data[[data.wh[i]]]))
+  } # for(i)
+
+  for(i in 1:length(founders.wh)) {
+    id = intersect(id, colnames(founders[[founders.wh[i]]]))
+  } # for(i)
+
+  markers = markers[markers[,1] %in% id,]
+  for(i in 1:length(data.wh)) {
+    data[[data.wh[i]]] = data[[data.wh[i]]][,id]
+  } # for(i)
+
+  for(i in 1:length(founders.wh)) {
+    founders[[founders.wh[i]]] = founders[[founders.wh[i]]][,id]
+  } # for(i)
+
+  return(list(markers = markers, data = data, founders = founders))
+
+} # synchronize.snps()
+
+
+# Keep only the DO founders with codes that are no NA.
+# Founders is expected to contain matrices with genotypes or intensties
+# that contain samples in rows and markers in columns.
+# Founders will also contain vecters 'sex' and 'code'.
+keep.do.founders = function(founders) {
+
+  if(all(names(founders) != "code")) {
+    stop(paste("keep.do.founders: \'code\' was not found in \'founders\'."))
+  } # if(all(names(founders) != "code"))
+
+  vec = which(sapply(founders, length) == length(founders$code))
+  mat = sapply(founders, ncol)
+  mat = which(!sapply(mat, is.null))
+
+  keep = which(!is.na(founders$code))
+  for(i in vec) {
+    founders[[i]] = founders[[i]][keep]
+  } # for(i)
+
+  for(i in mat) {
+    founders[[i]] = founders[[i]][keep,,drop = FALSE]
+  } # for(i)
+
+  return(founders)
+
+} # keep.do.founders()
+
+# Verify that the alleles are the same at each marker in the
+# founders and data genotypes.
+check.alleles = function(data, founders) {
+
+  if(!"geno" %in% names(data)) {
+    stop("check.alleles: \'data\' argument does not contain a \'geno\' element.")
+  } # if(!"g" %in% names(data))
+
+  if(!"geno" %in% names(founders)) {
+    stop("check.alleles: \'founders\' argument does not contain a \'geno\' element.")
+  } # if(!"g" %in% names(founders))
+
+  stopifnot(ncol(data$geno) == ncol(founders$geno))
+
+  dg = apply(data$geno, 2, unique)
+  fg = apply(founders$geno, 2, unique)
+
+  dg = lapply(dg, sort)
+  fg = lapply(fg, sort)
+
+  dg = lapply(dg, function(z) { z[z != "N"] })
+  fg = lapply(fg, function(z) { z[z != "N"] })
+
+  if(!all(sort(unique(unlist(dg))) == sort(unique(unlist(fg))))) {
+    stop(paste("All alleles do not match in founders and data genotypes.",
+         "Please verify that founders$geno and data$geno have the same allele calls."))
+  } # if(!all(sort(unique(unlist(dg))) == sort(unique(unlist(fg)))))
+
+} # check.alleles()

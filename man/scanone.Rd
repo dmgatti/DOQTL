@@ -43,6 +43,9 @@
      Numeric matrix containing the founder allele effects at each locus. Colnames are the additive covariates plus the founder terms.
   }
 }
+\details{
+  We require a sex argument in addcovar for mapping on the X chromosome. This is true even if all of your samples are of the same sex. It also means that mapping on the autosomes will occur with sex as an additive covariate. See A Guide to QTL Mapping with R/qtl by Karl Broman, pages 108-118.
+}
 \author{
   Daniel Gatti
 }

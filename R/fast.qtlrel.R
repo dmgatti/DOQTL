@@ -68,13 +68,17 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
   # Null model.
   ss.null = 0
   if(!is.null(err.cov)) {
+
     ytmp = err.cov %*% pheno
     xtmp = err.cov %*% addcovar
     qr.null = qr(xtmp)
     ss.null = sum(qr.resid(qr.null, ytmp)^2)
+
   } else {
+
     qr.null = qr(addcovar)
     ss.null = sum(qr.resid(qr.null, pheno)^2)
+
   } # else
 
   # Additive model for all SNPs.
@@ -101,10 +105,12 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
   } else {
 
     for(s in 1:nrow(snps)) {
+
       addx[,rng] = probs[,,s]
       qr.add = qr(addx)
       ss[s] = sum(qr.resid(qr.add, pheno)^2)
       coef[s,] = qr.coef(qr.add, pheno)
+
     } # for(s)
 
   } # else
