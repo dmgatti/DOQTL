@@ -30,7 +30,7 @@
 assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
                  chr, start, end, model = c("additive", "dominance", "full"),
                  scan = c("one", "two"), output = c("lod", "p-value", "bic"),
-                 snp.file = "ftp://ftp.jax.org/SNPtools/variants/mgp.v4.snps.dbSNP.vcf.gz",
+                 snp.file = "ftp://ftp.jax.org/SNPtools/variants/mgp.v5.merged.snps_all.dbSNP142.vcf.gz",
                  cross = c("DO", "CC", "HS")) {
 
   scan  = match.arg(scan)
