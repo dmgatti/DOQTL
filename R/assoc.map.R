@@ -93,10 +93,17 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
          "match dimnames(probs)[[1]]. Please verify that both variables",
          "contain the same sample IDs."))
   } # if(length(samples) == 0)
-  
+
   if(!missing(addcovar)) {
+
     addcovar = as.matrix(addcovar)
+    samples = intersect(rownames(pheno), rownames(addcovar))
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
+    addcovar = addcovar[samples,,drop = FALSE]
+    pheno = pheno[samples,,drop = FALSE]
+    probs = probs[samples,,]
+    K = K[samples, samples]
+
     if(nrow(addcovar) == 0) {
       stop(paste("There are no common sample IDs between rownames(addcovar)",
            "and rownames(pheno). Please ensure that there is some overlap",
@@ -109,6 +116,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
       samples = samples[-remove]
       addcovar = addcovar[-remove,,drop = FALSE]
     } # if(length(remove) > 0)
+
   } # if(!missing(addcovar))
   
   pheno = pheno[rownames(pheno) %in% samples,,drop = FALSE]
@@ -124,6 +132,10 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
+
+  if(!missing(addcovar)) {
+    addcovar = addcovar[rownames(pheno),,drop = FALSE]
+  } # if(!missing(addcovar))
 
   if(!all(snps[,1] == dimnames(probs)[[3]])) {
     stop(paste("All of the SNP IDs in snps do not match the SNP IDs in",
@@ -778,7 +790,7 @@ dohap2sanger = function(sanger, probs, snps)
   geno = matrix(0, nrow(probs), length(sanger), dimnames = list(rownames(probs),
          paste(seqnames(sanger), start(sanger), sep = ":")))
   for(i in 1:length(sanger)) {
-    marker = max(which(snps[,2] == as.character(seqnames(sanger))[i] & 
+    marker = max(which(snps[,2] == runValue(seqnames(sanger))[i] & 
                        snps[,3] <= start(sanger)[i]))
     muga   = (probs[,,marker] + probs[,,marker+1]) * 0.5  # faster than apply.
     geno[,i] = tcrossprod(founders[i,], muga)
