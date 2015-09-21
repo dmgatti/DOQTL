@@ -55,6 +55,7 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
     keep = as.list(1:length(chr))
 	
     for(i in 1:length(chr)) {
+      print(paste("CHR", chr[i]))
       Kbychr[[i]] = matrix(0, dim(probs)[1], dim(probs)[1], dimnames =
                list(dimnames(probs)[[1]], dimnames(probs)[[1]]))
    
