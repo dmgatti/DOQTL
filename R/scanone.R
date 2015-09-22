@@ -76,7 +76,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
     intcovar = intcovar[samples,, drop = FALSE]
   } # if(!missing(intcovar))
 
-  print(paste("Mapping with", nrow(pheno),"samples.\n"))
+  print(paste("Mapping with", nrow(pheno),"samples."))
 
   if(any(dim(probs) == 0)) {
     stop(paste("There are no matching samples in pheno and probs. Please",
@@ -87,7 +87,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
 
-  print(paste("Mapping with", nrow(snps), "markers.\n"))
+  print(paste("Mapping with", nrow(snps), "markers."))
 
   if(any(dim(probs) == 0)) {
     stop(paste("There are no matching markers in snps and probs. Please",
@@ -643,21 +643,19 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
         dimnames(mfprobs)[[2]] = paste("M", dimnames(mfprobs)[[2]], sep = ".")
       } # else if(length(males) > 0)
 
-      keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
-
       x.qtl = NULL
       if(missing(intcovar)) {
 
         # Additive covariates only.
         x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
-                K = K[["X"]][keep,keep], addcovar = addcovar,
+                K = K[["X"]][keep,keep], addcovar = addcovar[keep,,drop = FALSE],
                 snps = snps[xchr,])
 
       } else {
 
         # Additive & interactive covariates.
         x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,],
-                K = K[["X"]][keep,keep], addcovar = addcovar.x, 
+                K = K[["X"]][keep,keep], addcovar = addcovar[keep,,drop = FALSE], 
                 intcovar = intcovar[keep,,drop = FALSE], snps = snps[xchr,])
 
       } # else
