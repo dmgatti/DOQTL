@@ -20,7 +20,7 @@
 #                   are additive values and the last 8 are dominance values.
 #                   'Full' returns all 36 states.
 #            cross: character containing the cross type. Typically "DO, "CC, 
-#                   "HS" or "DOF1".
+#                   "HS", "HSrat"  or "DOF1".
 condense.model.probs = function(path = ".", write = "founder.probs.Rdata",
                        model = c("additive", "dominance", "full"),
                        cross = "DO") {
@@ -67,6 +67,7 @@ get.additive = function(files, samples) {
   # Create a large 3D array with samples/states/SNPs in dimensions 1,2,3.
   print(files[1])
   load(files[1]) # load in prsmth
+  expected.rows = nroe(prsmth)
   prsmth = as.matrix(prsmth)
   founders = sort(unique(unlist(strsplit(colnames(prsmth), split = ""))))
   model.probs = array(0, c(length(files), length(founders), nrow(prsmth)),
@@ -80,6 +81,12 @@ get.additive = function(files, samples) {
   for(i in 2:length(files)) {
     print(files[i])
     load(files[i]) # load in prsmth
+
+    if(nrow(prsmth) != expected.rows) {
+      stop(paste("The file", files[i], "contains", nrow(files[i]), 
+           "but we were expecting", expected.rows, "."))
+    } # if(nrow(prsmth) != expected.rows)
+
     model.probs[i,,] = t(prsmth %*% mat)
   } # for(i)
 
