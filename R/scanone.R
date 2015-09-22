@@ -49,9 +49,9 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
       samples = intersect(samples, rownames(K))
     } # else
   } # if(!missing(K))
-  if(!missing(addcovar)) {
-    samples = intersect(samples, rownames(addcovar))
-  } # if(!missing(addcovar))
+
+  samples = intersect(samples, rownames(addcovar))
+
   if(!missing(intcovar)) {
     samples = intersect(samples, rownames(intcovar))
   } # if(!missing(intcovar))
@@ -76,7 +76,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
     intcovar = intcovar[samples,, drop = FALSE]
   } # if(!missing(intcovar))
 
-  message(paste("Mapping with", nrow(pheno),"samples.\n"))
+  print(paste("Mapping with", nrow(pheno),"samples.\n"))
 
   if(any(dim(probs) == 0)) {
     stop(paste("There are no matching samples in pheno and probs. Please",
@@ -87,37 +87,19 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
   snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,match(snps[,1], dimnames(probs)[[3]])]
 
+  print(paste("Mapping with", nrow(snps), "markers.\n"))
+
   if(any(dim(probs) == 0)) {
     stop(paste("There are no matching markers in snps and probs. Please",
          "verify that the marker IDs in snps[,1] match the marker",
          "IDs in dimnames(probs)[[3]]."))
   } # if(any(dim(probs) == 0))
 
-  # Match sample IDs in additive covariates.
-  addcovar = data.frame(addcovar, stringsAsFactors = TRUE)
-  rn = rownames(addcovar)
-  addcovar = lapply(addcovar, as.numeric)
-  cn = names(addcovar)
-  addcovar = matrix(unlist(addcovar), length(addcovar[[1]]),
-             length(addcovar), dimnames = list(rn, cn))
-  rownames(addcovar) = rn
-  addcovar = addcovar[rownames(addcovar) %in% rownames(pheno),,drop = FALSE]
-  addcovar = addcovar[match(rownames(pheno), rownames(addcovar)),,drop = FALSE]
-
   if(sum(rownames(pheno) %in% rownames(addcovar)) == 0) {
     stop(paste("rownames(pheno) does not contain any sample IDs in",
          "common with rownames(addcovar). Please make sure that the",
          "rownames in pheno and addcovar match."))
   } # if(sum(rownames(pheno) %in% rownames(addcovar)) == 0)
-
-  pheno = pheno[rownames(pheno) %in% rownames(addcovar),,drop = FALSE]
-  addcovar = addcovar[rownames(addcovar) %in% rownames(pheno),,drop = FALSE]
-  addcovar = addcovar[match(rownames(pheno), rownames(addcovar)),,drop = FALSE]
-  probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
-
-  if(is.null(colnames(addcovar))) {
-    colnames(addcovar) = paste("addcovar", 1:ncol(addcovar), sep = ".")
-  } # if(is.null(colnames(addcovar)))
 
   addcovar = as.matrix(addcovar)
 
@@ -619,9 +601,9 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
         # one big array.
         if(model == "additive") {
 
-          mfprobs = array(0, c(dim(probs)[1], 2 * dim(probs)[2], length(xchr)),
+          mfprobs = array(0, c(nrow(probs), 2 * ncol(probs), length(xchr)),
                     dimnames = list(dimnames(probs)[[1]], paste(rep(c("F", "M"), 
-                    each = dim(probs)[2]), dimnames(probs)[[2]], sep = "."), 
+                    each = ncol(probs)), dimnames(probs)[[2]], sep = "."), 
                     dimnames(probs)[[3]][xchr]))
           for(j in females) {
             mfprobs[j,1:dim(probs)[2],] = probs[j,,xchr]
@@ -661,51 +643,23 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
         dimnames(mfprobs)[[2]] = paste("M", dimnames(mfprobs)[[2]], sep = ".")
       } # else if(length(males) > 0)
 
-      if(missing(addcovar)) {
+      keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
 
-        # No covariates, but we need sex for the null hypothesis.
-        if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0) {
-          sex = pheno[,grep("^sex$", colnames(pheno), ignore.case = TRUE)]
-          sex = as.matrix(as.numeric(sex == "M"))
-          dimnames(sex) = list(rownames(pheno), "sex")
-        } # if(length(grep("^sex$", colnames(pheno), ignore.case = TRUE)) > 0)
+      x.qtl = NULL
+      if(missing(intcovar)) {
 
-        x.qtl = qtl.qtlrel(pheno = p[keep,drop = FALSE], probs = mfprobs[keep,,],
-                K = K[["X"]][keep,keep], snps = snps[xchr,,drop = FALSE])
+        # Additive covariates only.
+        x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
+                K = K[["X"]][keep,keep], addcovar = addcovar,
+                snps = snps[xchr,])
 
       } else {
 
-        keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
-        addcovar.x = addcovar[keep,-grep("sex", colnames(addcovar), 
-                     ignore.case = T), drop = FALSE]
+        # Additive & interactive covariates.
+        x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,],
+                K = K[["X"]][keep,keep], addcovar = addcovar.x, 
+                intcovar = intcovar[keep,,drop = FALSE], snps = snps[xchr,])
 
-        if(missing(intcovar)) {
-
-          # Additive covariates only.
-          x.qtl = NULL
-          if(length(addcovar.x) > 0) {
-            x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
-                    K = K[["X"]][keep,keep], addcovar = addcovar.x,
-                    snps = snps[xchr,])
-          } else {
-            x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
-                    K = K[["X"]][keep,keep], snps = snps[xchr,])
-          } # else
-
-        } else {
-
-          # Additive & interactive covariates.
-          x.qtl = NULL
-          if(length(addcovar.x) > 0) {
-            x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,],
-                    K = K[["X"]][keep,keep], addcovar = addcovar.x, 
-                    intcovar = intcovar[keep,,drop = FALSE], snps = snps[xchr,])
-          } else {
-            x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,],
-                    K = K[["X"]][keep,keep], intcovar = intcovar[keep,,drop = FALSE],
-                    snps = snps[xchr,])
-          } # else
-        } # else
       } # else
 
       if(!is.null(auto.qtl)) {
