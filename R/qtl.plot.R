@@ -11,7 +11,6 @@
 #            sig.col: vector, color, a set of colors to use for each
 #                     significance threshold. Must be same length as sig.thr.
 # To plot a subset of chromosomes, feed in a subset of SNPs.
-# Get the chr lengths from the org.Mm.eg.db pacakge.
 plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL, 
              sig.col = "red", ...) {
   
@@ -54,8 +53,10 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
          "of the DOQTL object. Please verify that stat.name contains one of the",
          "column names in the DOQTL object."))
   } # if(length(plot.column) == 0)
+
   par(font = 2, font.lab = 2, font.axis = 2, las = 1, xaxs = "i",
       plt = c(0.12, 0.95, 0.05, 0.88))
+
   if("ylim" %in% names(call)) {
     plot(gmb, lod[,plot.column], col = 0, xlab = "", xaxt = "n", ylab = stat.name, ...)
   } else {
@@ -67,6 +68,7 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
            xaxt = "n", ylim = c(0, max(lod[,plot.column], na.rm = TRUE) * 1.05), ...)
     } # else
   } # else
+
   lod = cbind(lod, gmb)
   lod = split(lod, lod[,2])
   usr = par("usr")
@@ -76,10 +78,14 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
   rect(usr[1], usr[3], usr[2], usr[4], border = 1)
   text(chrmid, 0.95 * usr[4], names(chrlen)[-1])
   lapply(lod, function(z) { points(z$gmb, z[,plot.column], type = "l", lwd = 2)})
+
   if(!is.null(sig.thr)) {
     abline(h = sig.thr, col = sig.col)
   } # if(!is.null(sig.thr))
+
 } # plot.doqtl()
+
+
 ################################################################################
 # Using the 8 state model data, make and effect plot that shows the coefficients
 # of each founder strain and the LOD.
@@ -110,13 +116,27 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
 #                 chromosome.
 coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend = TRUE,
                 colors = "DO", sex, ...) {
+
   old.par = par(no.readonly = TRUE)
-  if(colors[1] == "DO") {
-    
-    colors = do.colors
-  } # if(colors == "DO")
+
+  cross = attr(doqtl, "cross")
+  if(is.null(cross)) {
+    if(colors[1] == "DO") {    
+      colors = do.colors
+    } else if(colors[1] == "HS") {
+      colors = hs.colors
+    } # else if(colors[1] == "HS")
+  } else {
+    if(cross == "DO") {    
+      colors = do.colors
+    } else if(cross == "HS") {
+      colors = hs.colors
+    } # else if(cross == "HS")
+  } # else
+
   num.founders = nrow(colors)
   call = match.call()
+
   # Keep only the founder coefficients from the coef.matrix.
   lod = NULL
   coef = NULL
@@ -196,7 +216,7 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
   rect(usr[1], usr[3], usr[2], usr[4], lwd = 2)
   par(xpd = FALSE)
   # Plot the mapping statistic.
-  par(plt = c(0.12, 0.99, 0.3, 1))
+  par(plt = c(0.12, 0.99, 0.35, 1))
   # Single chromosome plot.
   plot(lod[,3], lod[,7], type = "l", lwd = 2, xlab = "",
        ylab = stat.name, ...)
