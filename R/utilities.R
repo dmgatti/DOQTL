@@ -5,9 +5,9 @@
 # Jan. 12, 2012
 ################################################################################
 convert.pos.to.bp = function(pos) {
-  if(max(pos) <= 200) {
+  if(max(pos) <= 300) {
     pos = pos * 1e6
-  } # if(max(pos] <= 200))
+  } # if(max(pos] <= 300))
   return(pos)
 }
 ################################################################################
@@ -34,19 +34,39 @@ get.do.states = function() {
   states
 } # get.do.states()
 
-
 #############################################################################
 # Get the mouse chromosome lengths.
 get.chr.lengths = function(genome = "mm10") {
 
-  bsgenome = get(paste0("BSgenome.Mmusculus.UCSC.", genome))
+  genome.prefix = substring(genome, 1, 2)
+  if(genome.prefix != "mm" & genome.prefix != "rn") {
+    stop(paste("get.chr.lengths: Unrecognized genome:", genome, ".\nDOQTL",
+         "currently support the mouse and rat genomes (i.e. mm10 or rn6)"))
+  } # if(genome.prefix != "mm" & genome.prefix != "rn")
 
-  chrlen = seqlengths(bsgenome)
+  species = "Mmusculus"
+  if(genome.prefix == "rn") {
+    species = "Rnorvegicus"
+  } # if(substring(genome, 1, 2) == "rn")
+
+  genome = get(paste0("BSgenome.", species, ".UCSC.", genome))
+
+  chrlen = seqlengths(genome)
   chrlen = chrlen[-grep("random|Un", names(chrlen))]
   names(chrlen) = sub("chr", "", names(chrlen))
-  chrlen = chrlen[c(1:19, "X", "Y", "M")]
-  chrlen = chrlen * 1e-6
   
+  old.warn = options("warn")$warn
+  options(warn = -1)  
+  autosomes = sort(which(!is.na(as.numeric(names(chrlen)))))
+  options(warn = old.warn)
+  chrlen = chrlen[c(autosomes, "X", "Y", "M")]
+  chrlen = chrlen * 1e-6
+
   return(chrlen)
   
 } # get.chr.lengths()
+#############################################################################
+# Get the precision on this machine.
+get.machine.precision = function() {
+  return(log10(.Machine$double.eps) / log10(exp(1)))
+}

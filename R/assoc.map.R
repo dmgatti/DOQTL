@@ -416,7 +416,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
 
     qtl.full = scanone(pheno = pheno, pheno.col = pheno.col, 
                probs = tmp, K = K, addcovar = addcovar, 
-               markers = markers[-nrow(markers),])
+               snps = markers[-nrow(markers),])
     rm(tmp)
     BIC.full = -2 * qtl.full$lod$A$lod + (ncol(addcovar) +  dim(probs)[[2]]) * 
                log(nrow(pheno))
