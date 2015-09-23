@@ -67,7 +67,7 @@ get.additive = function(files, samples) {
   # Create a large 3D array with samples/states/SNPs in dimensions 1,2,3.
   print(files[1])
   load(files[1]) # load in prsmth
-  expected.rows = nroe(prsmth)
+  expected.rows = nrow(prsmth)
   prsmth = as.matrix(prsmth)
   founders = sort(unique(unlist(strsplit(colnames(prsmth), split = ""))))
   model.probs = array(0, c(length(files), length(founders), nrow(prsmth)),

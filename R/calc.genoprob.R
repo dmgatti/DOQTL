@@ -42,6 +42,23 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
     if(!is.vector(data$sex)) { 
       stop("data$sex must be a vector containing only M and F with sample IDs in names.")
     } # if(!is.vector(data$sex))
+
+    # Remove samples with no sex.
+    if(any(is.na(data$sex))) {
+      wh = which(is.na(data$sex))
+
+      warning(paste("Some samples have sex = NA. These will be removed.", 
+              names(sex)[wh]))
+
+      sex = sex[-wh]
+      gen = gen[-wh]
+      if("x" %in% names(data)) {
+        x = x[-wh,]
+        y = y[-wh,]
+      } else {
+        geno = geno[-wh,]
+      } # else
+    } # if(any(is.na(data$sex))
   } # else
 
   if(!is.null(data$gen)) {
