@@ -97,7 +97,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(!missing(addcovar)) {
 
     addcovar = as.matrix(addcovar)
-    samples = intersect(rownames(pheno), rownames(addcovar))
+    samples = intersect(samples, rownames(addcovar))
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
     addcovar = addcovar[samples,,drop = FALSE]
     pheno = pheno[samples,,drop = FALSE]
@@ -119,12 +119,10 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
 
   } # if(!missing(addcovar))
   
-  pheno = pheno[rownames(pheno) %in% samples,,drop = FALSE]
-  probs = probs[dimnames(probs)[[1]] %in% samples,,]
-  probs = probs[match(rownames(pheno), dimnames(probs)[[1]]),,]
+  pheno = pheno[samples,,drop = FALSE]
+  probs = probs[samples,,]
   K = as.matrix(K)
-  K = K[rownames(K) %in% samples, colnames(K) %in% samples]
-  K = K[match(rownames(pheno), rownames(K)), match(rownames(pheno), colnames(K))]
+  K = K[samples, samples]
   print(paste("Mapping with", nrow(pheno), "samples."))
   stopifnot(all(rownames(pheno) == dimnames(probs)[[1]]))
   stopifnot(all(rownames(pheno) == rownames(K)))
