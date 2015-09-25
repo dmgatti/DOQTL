@@ -30,6 +30,11 @@ sex.predict = function(x, y, snps, plot = FALSE) {
   y.rng = which(snps[,2] == "Y")
   y.int = rowMeans(x[,y.rng] + y[,y.rng], na.rm = TRUE)
   keep = which(!(is.na(x.int) & is.na(y.int)))
+
+  if(length(keep) < length(x.int)) {
+    warning(paste("Removing", length(x.int) - length(keep),
+            "samples with NaN intensity values."))
+  } # if(length(keep) < length(x.int))
   x.int = x.int[keep]
   y.int = y.int[keep]
   # Get initial sex estimates using mixture model clustering.

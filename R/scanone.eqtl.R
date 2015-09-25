@@ -64,10 +64,13 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
   if(is.null(colnames(expr))) {
     stop(paste("expr must have sample IDs in the column names."))
   } # if(is.null(colnames(expr)))
+
   probs = probs[match(dimnames(probs)[[1]], colnames(expr)),,]
+
   if(!missing(addcovar)) {
     addcovar = addcovar[match(rownames(addcovar), colnames(expr)),]
   } # if(!missing(addcovar))
+
   if(!missing(K)) {
     K = K[match(rownames(K), colnames(expr)),
           match(colnames(K), colnames(expr))]
@@ -75,6 +78,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
 
   # Convert the expression data to a matrix.
   expr = as.matrix(expr)
+
   # Convert the SNPs into list of matrices, one for each founder.
   p2 = vector("list", dim(probs)[2])
   for(i in 1:length(p2)) {
@@ -88,7 +92,7 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
   if(!missing(K)) {
     eig = eigen(K, symmetric = TRUE)
     if(any(eig$values <= 0)) {
-        stop("The covariance matrix is not positive definite")
+      stop("The covariance matrix is not positive definite")
     } # if(any(eig$values <= 0))
     correctionMatrix = eig$vectors %*% diag(1.0 / sqrt(eig$values)) %*% t(eig$vectors)
     rm(eig, K)
@@ -203,9 +207,8 @@ matrixeqtl.snps = function(pheno, geno, K, addcovar) {
   div[drop] = 1
   geno = geno / div
   geno[drop,] = 0
-  R2 = tcrossprod(geno, pheno)^2
-  # Note: we return the LRS.
-  return((-ncol(pheno) * log(1.0 - R2)))
+  # Note: we return the R^2.
+  return(tcrossprod(geno, pheno)^2)
 } # matrixeqtl.snps()
 
 

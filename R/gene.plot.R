@@ -14,7 +14,7 @@
 gene.plot = function(mgi, rect.col = "grey30", text.col = "black", ...) {
 
   # If we have no genes, just plot an empty frame and return.
-  if(is.null(mgi) || nrow(mgi) == 0) {
+  if(is.null(mgi) || length(mgi) == 0) {
     plot(0, 0, col = 0, xlab = "", xaxs = "i", ylab = "", yaxt = "n", ...)
     return()
   } # if(is.null(mgi) || nrow(mgi) == 0)

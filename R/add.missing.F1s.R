@@ -6,74 +6,123 @@
 #                      'method' attribute, which must be either 'allele' or 
 #                      'intensity'.
 #            snps: data.frame containing SNP information.
+#            sampletype: character string indicating the type of 
+#                        sample. One of c("DO", "CC", "DOF1", "HS", "other")
 # Returns: list containing founder data, with the missing F1s added.
-add.missing.F1s = function(founders, snps) {
-  missing = founders$states$auto[which(!founders$states$auto %in% 
-            founders$code[founders$sex == "F"])]
+add.missing.F1s = function(founders, snps, sampletype = c("DO", "CC", "DOF1", 
+                  "HS", "HSrat", "other")) {
+
+  sampletype = match.arg(sampletype)
+
+  missing = NULL
+
+  if(length(unique(founders$sex)) == 2) {
+
+    missing = founders$states$auto[which(!founders$states$auto %in% 
+              founders$code[founders$sex == "F"])]
+    missing = c(missing, founders$states$auto[which(!founders$states$auto %in% 
+              founders$code[founders$sex == "M"])])
+    missing = sort(unique(missing))
+
+  } else {
+
+    if(unique(founders$sex) == "M") {
+      if(attr(founders, "method") == "intensity") {
+        warning("Only male founders found. X chromosome cannot be reconstructed.")
+      } # if(attr(founders, "method") == "intensity")
+      missing = founders$states$auto[which(!founders$states$auto %in% 
+                founders$code[founders$sex == "M"])]
+    } # if(unique(founders$sex) == "M")
+
+    if(unique(founders$sex) == "F") {
+      missing = founders$states$auto[which(!founders$states$auto %in% 
+                founders$code[founders$sex == "F"])]
+    } # if(unique(founders$sex) == "M")
+
+  } # else
+
   mthd = attr(founders, "method")
+
   if(length(missing) > 0) {
+
     # Expand missing to 2 samples per genotype, one for males and one for females.
     missing = rep(missing, each = 2)
+
     # Allele Calls
     if(mthd == "allele") {
+
       # Add columns for the new F1s.
+      unique.geno = unique(unlist(apply(founders$geno, 2, unique)))
+
+      stopifnot(all(unique.geno %in% c("A", "C", "G", "T", "H", "N")))
+
       founders$geno = data.frame(rbind(founders$geno, matrix("", length(missing), 
                       ncol(founders$geno),dimnames = list(missing, 
                       colnames(founders$geno)))), check.names = FALSE)
+      rownames(founders$geno) = make.unique(c(names(founders$code), missing))
       founders$code = c(founders$code, missing)
-      names(founders$code)[(length(founders$code) - 
-                           length(missing) + 1):length(founders$code)] = missing
+      names(founders$code) = rownames(founders$geno)
       founders$sex  = c(founders$sex, rep(c("F", "M"), length(missing) / 2))
-      names(founders$sex)[(length(founders$sex) - 
-                           length(missing) + 1):length(founders$sex)] = missing
-      unique.geno = unique(unlist(apply(founders$geno, 2, unique)))
+      names(founders$sex) = rownames(founders$geno)
       founders$geno = lapply(founders$geno, factor, levels = unique.geno)
       founders$geno = data.frame(founders$geno)
+      rownames(founders$geno) = names(founders$code)
+
       # Get the parents of each of the missing F1s.
       par = matrix(unlist(strsplit(missing, split = "")), nrow = 2)
       par = matrix(paste(par, par, sep = ""), nrow = 2)
+
       # For each F1, get the parental genotypes and figure out the F1 genotype.
       # Autosomes.
       curr.snps = which(snps[,2] %in% 1:19)
+
+      # Get the parental genotypes.
+      rn = sort(unique(as.vector(par)))
+      par.gt = matrix("", length(rn), ncol(founders$geno), dimnames = 
+               list(rn, colnames(founders$geno)))
+      for(i in 1:nrow(par.gt)) {
+        pg = lapply(founders$geno[founders$code == rownames(par.gt)[i],,
+             drop = FALSE], table)
+        par.gt[i,] = sapply(pg, function(z) { names(z)[which.max(z)] })
+      } # for(i)
+
+      # Fill in the F1 genotypes for the autosomes.
       for(i in seq(1, length(missing), 2)) {
         geno.rows = which(founders$code == missing[i])
-        p1g = lapply(founders$geno[founders$code == par[1,i], curr.snps, drop = FALSE],
-              table)
-        p2g = lapply(founders$geno[founders$code == par[2,i], curr.snps, drop = FALSE],
-              table)
-        p1g = sapply(p1g, function(z) { names(z)[which.max(z)] })
-        p2g = sapply(p2g, function(z) { names(z)[which.max(z)] })
+        p1g = par.gt[par[1,i],]
+        p2g = par.gt[par[2,i],]
         homo = which(p1g == p2g)
-        founders$geno[geno.rows, homo] = p1g[homo]
+        founders$geno[geno.rows, homo] = matrix(p1g[homo], nrow = length(geno.rows),
+                                         ncol = length(homo), byrow = T)
         het = which(p1g != p2g)
         founders$geno[geno.rows, het] = "H"
       } # for(i)
+
       # X chromosome.
       curr.snps = which(snps[,2] == "X")
       if(length(curr.snps) > 0) {
+        
         # Females
         for(i in seq(1, length(missing), 2)) {
           geno.rows = which(founders$code == missing[i] & founders$sex == "F")
-          p1g = lapply(founders$geno[founders$code == par[1,i], curr.snps, drop = FALSE],
-                table)
-          p2g = lapply(founders$geno[founders$code == par[2,i], curr.snps, drop = FALSE],
-                table)
-          p1g = sapply(p1g, function(z) { names(z)[which.max(z)] })
-          p2g = sapply(p2g, function(z) { names(z)[which.max(z)] })
+          p1g = par.gt[par[1,i],]
+          p2g = par.gt[par[2,i],]
           homo = which(p1g == p2g)
-          founders$geno[geno.rows, curr.snps][,homo] = p1g[homo]
+          founders$geno[geno.rows, homo] = matrix(p1g[homo], nrow = length(geno.rows),
+                                           ncol = length(homo), byrow = T)
           het = which(p1g != p2g)
-          founders$geno[geno.rows, curr.snps][,het] = "H"
+          founders$geno[geno.rows, het] = "H"
         } # for(i)
-            
+
         # Males
         # Because we don't know the maternal allele, set these to N. We don't
         # use the F1s to genotypes the males. We only use the founders.
         for(i in seq(1, length(missing), 2)) {
           geno.rows = which(founders$code == missing[i] & founders$sex == "M")
-          founders$geno[geno.rows, curr.snps, drop = FALSE] = "N"
+          founders$geno[geno.rows, curr.snps] = "N"
         } # for(i)
       } # if(length(curr.snps) > 0)
+
       # Y chromosome.
       curr.snps = which(snps[,2] == "Y")
       if(length(curr.snps) > 0) {
@@ -81,28 +130,32 @@ add.missing.F1s = function(founders, snps) {
         # Set these to N.
         for(i in seq(1, length(missing), 2)) {
           geno.rows = which(rownames(founders$geno) == missing[i] & founders$sex == "F")
-          founders$geno[geno.rows, curr.snps, drop = FALSE] = "N"
+          founders$geno[geno.rows, curr.snps] = "N"
         } # for(i)
         # Males
         # We don't used the F1s to genotype the Y chr, so set these to 'N'.
         for(i in seq(1, length(missing), 2)) {
           geno.rows = which(rownames(founders$geno) == missing[i] & founders$sex == "F")
-          founders$geno[geno.rows, curr.snps, drop = FALSE] = "N"
+          founders$geno[geno.rows, curr.snps] = "N"
         } # for(i)
       } # if(length(curr.snps) > 0)
+
       # M chromosome.
       # We don't used the F1s to genotype the M chr, so set these to 'N'.
       curr.snps = which(snps[,2] == "M")
       if(length(curr.snps) > 0) {
         for(i in seq(1, length(missing), 2)) {
-          geno.rows = which(rownames(founders$geno) == missing[i] & founders$sex == "F")
-          founders$geno[geno.rows, curr.snps, drop = FALSE] = "N"
+          geno.rows = which(rownames(founders$geno) == missing[i] & founders$sex == "M")
+          founders$geno[geno.rows, curr.snps] = "N"
         } # for(i)
       } # if(length(curr.snps) > 0)    
+
       founders$geno = as.matrix(founders$geno)
+
     } else if(mthd == "intensity") {
-    # Intensities
-  
+
+      # Intensities
+
       # Add rows for the new F1s.
       founders$x = as.matrix(rbind(founders$x, matrix(0, length(missing), 
                    ncol(founders$x), dimnames = list(missing,
@@ -116,6 +169,7 @@ add.missing.F1s = function(founders, snps) {
       founders$sex  = c(founders$sex, rep(c("F", "M"), length(missing) / 2))
       names(founders$sex)[(length(founders$sex) - 
                            length(missing) + 1):length(founders$sex)] = missing
+
       # Get the parents of each of the missing F1s.
       par = matrix(unlist(strsplit(missing, split = "")), nrow = 2)
       par = matrix(paste(par, par, sep = ""), nrow = 2)
@@ -124,11 +178,13 @@ add.missing.F1s = function(founders, snps) {
                        dimnames = list(unique.par, colnames(founders$x))), 
                        y = matrix(0, length(unique.par), ncol(founders$y),
                        dimnames = list(unique.par, colnames(founders$y))))
+
       for(i in 1:length(unique.par)) {
         rows = which(founders$code == unique.par[i])
         par.means$x[i,] = colMeans(founders$x[rows,,drop = FALSE], na.rm = TRUE)
         par.means$y[i,] = colMeans(founders$y[rows,,drop = FALSE], na.rm = TRUE)
       } # for(i)
+
       # Calculate the new F1s intensities as the mean of their parents.
       # Autosomes.
       curr.snps = which(snps[,2] %in% 1:19)
@@ -141,6 +197,7 @@ add.missing.F1s = function(founders, snps) {
                    matrix(colMeans(par.means$y[par[,i], curr.snps], na.rm = TRUE),
                    length(x.rows), length(curr.snps), byrow = TRUE)
       } # for(i)
+
       # X chromosome.
       curr.snps = which(snps[,2] == "X")
       # Females
@@ -153,6 +210,7 @@ add.missing.F1s = function(founders, snps) {
                    matrix(colMeans(par.means$y[par[,i], curr.snps], na.rm = TRUE),
                    length(x.rows), length(curr.snps), byrow = TRUE)
       } # for(i)
+
       # Males
       # We don't used the F1s for the male X chr, so set them to NA.
       for(i in seq(1, length(missing), 2)) {
@@ -184,9 +242,51 @@ add.missing.F1s = function(founders, snps) {
         founders$x[x.rows, curr.snps] = NA
         founders$y[x.rows, curr.snps] = NA
       } # for(i)
+
+      # Look for NaN in the founder data and try to replace them with
+      # values.
+      wh = which(colSums(is.nan(founders$x)) > 0 | colSums(is.nan(founders$y)) > 0)
+      if(length(wh) > 0) {
+
+        for(i in wh) {
+
+          idx = which(is.nan(founders$x[,i]))
+          for(j in idx) {
+            cd = founders$code[j]
+            stopifnot(length(unique(cd)) == 1)
+            par = strsplit(cd, split = "")
+            par = matrix(rep(unlist(par), each = 2), ncol = 2, byrow = TRUE)
+            par = apply(par, 1, paste0, collapse = "")
+            founders$x[j,i] = mean(founders$x[founders$code %in% par,i], na.rm = TRUE)
+            founders$y[j,i] = mean(founders$y[founders$code %in% par,i], na.rm = TRUE)
+          } # for(j)
+
+        } # for(i)
+
+      } # if(length(wh) > 0)
+
+      if(any(is.nan(founders$x))) {
+        stop("NaN in founders$x.")
+      } # if(any(is.nan(founders$x)))
+  
+      if(any(is.nan(founders$y))) {
+        stop("NaN in founders$y.")
+      } # if(any(is.nan(founders$y)))
+
+      if(sampletype == "DOF1") {
+        keep = which(founders$code %in% founders$states$auto)
+        founders$x = founders$x[keep,]
+        founders$y = founders$y[keep,]
+        founders$sex = founders$sex[keep]
+        founders$code = founders$code[keep]
+      } # if(sampletype == "DOF1")
+
     } else {
       stop(paste("Unknown method", mthd, "in add.missing.F1s()"))
     } # else
   } # if(length(missing) > 0)
+
   return(founders)
+
 } # add.missing.F1s()
+

@@ -1,5 +1,8 @@
 scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
-               model = c("additive", "full"), path = ".", nperm = 1000) {
+               model = c("additive", "full"), path = ".", nperm = 1000,
+               return.val = c("lod", "p")) {
+
+  return.val = match.arg(return.val)
 
   if(!missing(intcovar)) {
     stop("Interactive covariates not yet implemented")
@@ -38,7 +41,7 @@ scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
   if(!missing(addcovar)) {
     addcovar = as.matrix(addcovar)
     addcovar = addcovar[rowMeans(is.na(addcovar)) == 0,,drop = FALSE]
-    pheno = pheno[rownames(pheno) %in% rownames(addcovar),]
+    pheno = pheno[rownames(pheno) %in% rownames(addcovar),,drop = FALSE]
     addcovar = addcovar[rownames(addcovar) %in% rownames(pheno),,drop = FALSE]
     addcovar = addcovar[match(rownames(pheno), rownames(addcovar)),,drop = FALSE]
     probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
@@ -51,7 +54,7 @@ scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
   if(!missing(intcovar)) {
     covar = as.matrix(intcovar)
     intcovar = intcovar[rowMeans(is.na(intcovar)) == 0,,drop = FALSE]
-    pheno = pheno[rownames(pheno) %in% rownames(intcovar),]
+    pheno = pheno[rownames(pheno) %in% rownames(intcovar),,drop = FALSE]
     intcovar = intcovar[rownames(intcovar) %in% rownames(pheno),,drop = FALSE]
     intcovar = intcovar[match(rownames(pheno), rownames(intcovar)),,drop = FALSE]
     probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
@@ -62,21 +65,31 @@ scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
   } # if(!is.null(intcovar))
 
   for(i in pheno.col) {
+
     print(colnames(pheno)[i])
     p = pheno[,i]
     names(p) = rownames(pheno)
     keep = which(!is.na(p))
+
     if(!missing(addcovar)) {
       perms = permutations.qtl.LRS(pheno = p[keep], probs = probs[keep,,], 
-              snps = snps, addcovar = addcovar[keep,,drop=FALSE], nperm = nperm)
+              snps = snps, addcovar = addcovar[keep,,drop=FALSE], 
+              nperm = nperm, return.val = return.val)
     } else {
       perms = permutations.qtl.LRS(pheno = p[keep], probs = probs[keep,,], 
-              snps = snps, nperm = nperm)
+              snps = snps, nperm = nperm, return.val = return.val)
     } # else
-    perms = sort(perms / (2 * log(10)))
+
+    if(return.val == "lod" ) {
+      perms = perms / (2 * log(10))
+    } # if(return.val == "lod" )
+
     write(perms, paste(path, "/", colnames(pheno)[i], ".perms.txt", sep = ""),
           sep = "\t")
+
   } # for(i)
+
   return(perms)
   
 } # scanone.perm()
+
