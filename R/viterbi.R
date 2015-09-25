@@ -28,7 +28,7 @@ viterbi.allele = function(data, founders, params, snps) {
     ss = which(snps[,2] == chr)
     # Calculate the transition probabilities.
     a = do.trans.probs(states = founders$states, snps = snps, chr = chr, 
-        sex = data$sex, do.gen = data$gen)
+        sex = data$sex, gen = data$gen)
     # Calculate genotype probabilities.
 #    res = .C(C_viterbi,
 #             dims = ,
@@ -46,7 +46,7 @@ viterbi.intensity = function(data, founders, params, snps) {
     ss = which(snps[,2] == chr)
     # Calculate the transition probabilities.
     a = do.trans.probs(states = founders$states, snps = snps, chr = chr, 
-        sex = data$sex, do.gen = data$gen)
+        sex = data$sex, gen = data$gen)
     # Calculate genotype probabilities.
 #    res = .C(viterbi_from_r,
 #             dims = ,

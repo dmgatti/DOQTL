@@ -107,18 +107,23 @@ qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
 #            return.val: character string containing either "lrs" or "p",
 #                        indicating the type of return statistic.
 permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
-                       return.val = c("lrs", "p")) {
+                       return.val = c("lod", "p")) {
+
   return.val = match.arg(return.val)
   
   if(!is.matrix(pheno)) {
     pheno = as.matrix(pheno)
   } # if(!is.matrix(pheno))
+
   # Number of samples.
   n = nrow(pheno)
+
   # Number of SNPs.
   m = dim(probs)[3]
+
   # Number of phenotypes.
   ph = ncol(pheno)
+
   # Create the covariates matrix.
   null.var = NULL
   if(missing(addcovar)) {
@@ -134,15 +139,24 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
                           pheno)))
     addcovar = as.matrix(cbind(Intercept = rep(1, n), addcovar, probs[,,1]))
   } # else
+
   # Save the maximum LRS from each permutation.
   max.lrs = matrix(0, nperm, ph, dimnames = list(1:nperm, colnames(pheno)))
   lrs = matrix(0, m, ph, dimnames = list(dimnames(probs)[[3]], colnames(pheno)))
+
   for(p in 1:nperm) {
+
     print(paste(p, "of", nperm))
+
     # Permute the phenotypes and fixed covariates.
+#    sex.col = grep("sex", colnames(addcovar), ignore.case = TRUE)
+#    new.order = rep(0, nrow(pheno))
+#    new.order[sex.col == 0] = sample(which(sex.col == 0))
+#    new.order[sex.col == 1] = sample(which(sex.col == 1))
     new.order = sample(1:nrow(pheno))
     pheno = as.matrix(pheno[new.order,])
     addcovar = addcovar[new.order,]
+
     # The range of columns that contain the genotypes.
     rng = (ncol(addcovar) - dim(probs)[2] + 1):ncol(addcovar)
     for(s in 1:m) {
@@ -153,9 +167,12 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
     # Note that we get the *minimum* residual variance to obtain the
     # *maximum* LRS.
     max.lrs[p,] = apply(lrs, 2, min)
+
   } # for(p)
+
   retval = NULL
-  if(return.val == "lrs") {
+
+  if(return.val == "lod") {
     retval = -n * log(max.lrs * matrix(null.var, nrow(max.lrs), ncol(max.lrs),
              byrow = TRUE))
   } else {
@@ -163,5 +180,7 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
              byrow = TRUE))
     retval = pchisq(q = lrs, df = dim(probs)[[2]] - 1, lower.tail = FALSE)
   } # else
+
   return(retval)
+
 } # permutations.qtl.LRS()

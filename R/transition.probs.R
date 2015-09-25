@@ -14,7 +14,7 @@
 #                     column 2: chr, column 3: base location, column 4: cM
 #                     location.  These should only be the SNPs on the current
 #                     chromosome.
-#            do.gen: The DO outbreeding generation for each sample.
+#            gen: The DO outbreeding generation for each sample.
 #            chr: one of "auto", "X", for each type of chr.
 #            sex: either "M" or "F". Used on X chromosome only.
 # Returns: list of transition probability arrays, one for each DO generation
@@ -26,7 +26,8 @@
 #           get.trans.probs, autosome.femaleX.trans.probs, maleX.trans.probs,
 #           assign.autosome.femaleX.cases.
 do.trans.probs = function(states, snps, chr = c(1:19, "X"), 
-                 sex = c("M", "F"), do.gen) {
+                 sex = c("M", "F"), gen) {
+
   chr = match.arg(chr)
   sex = match.arg(sex)
 
@@ -38,7 +39,7 @@ do.trans.probs = function(states, snps, chr = c(1:19, "X"),
   names(alpha) = c(4, 5, 6, 7, 8, 9, 10, 11, 12)
 
   # Get the unique DO generations.
-  unique.gen = sort(unique(do.gen))
+  unique.gen = sort(unique(gen))
   unique.gen = unique.gen[!is.na(unique.gen)]
 
   # Create the return value list.
@@ -67,7 +68,7 @@ do.trans.probs = function(states, snps, chr = c(1:19, "X"),
   } else {
     # Males
     # Autosomes
-    if(chr %in% 1:19) {
+    if(!is.na(as.numeric(chr))) {
 
       cases = assign.autosome.femaleX.cases(states)
 
@@ -103,7 +104,7 @@ do.trans.probs = function(states, snps, chr = c(1:19, "X"),
   for(i in 1:length(unique.gen)) {
 
     r = diff(snps[,4]) * 1e-8
-    r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
+    r[abs(r - 0) < 1e-16] = 1e-8  # We can't have zero values here, so set them very small.
     trans.prob = get.trans.probs(r = r, do.gen = unique.gen[i], alpha, chr, sex)
 
     for(s in 1:(nrow(snps) - 1)) {
@@ -113,7 +114,7 @@ do.trans.probs = function(states, snps, chr = c(1:19, "X"),
     retval[[i]] = log(retval[[i]])
 
     # This takes care of probabilities that were = 0.
-    retval[[i]][is.infinite(retval[[i]])] = -.Machine$double.xmax
+    retval[[i]][is.nan(retval[[i]]) | is.infinite(retval[[i]])] = -.Machine$double.xmax
 
   } #for(i)
 
@@ -136,7 +137,7 @@ do.trans.probs = function(states, snps, chr = c(1:19, "X"),
 #                       mutant male or "MUTxDO", indicating a mutant female
 #                       crossed with a DO male.
 dof1.trans.probs = function(states, snps, chr = c(1:19, "X"), 
-                 sex = c("M", "F"), do.gen, direction = c("DOxMUT", "MUTxDO")) {
+                 sex = c("M", "F"), gen, direction = c("DOxMUT", "MUTxDO")) {
 
   chr = match.arg(chr)
   sex = match.arg(sex)
@@ -150,7 +151,7 @@ dof1.trans.probs = function(states, snps, chr = c(1:19, "X"),
   names(alpha) = c(4, 5, 6, 7, 8, 9, 10, 11, 12)
 
   # Get the unique DO generations.
-  unique.gen = sort(unique(do.gen))
+  unique.gen = sort(unique(gen))
   unique.gen = unique.gen[!is.na(unique.gen)]
 
   # Create the return value list.
@@ -186,7 +187,7 @@ dof1.trans.probs = function(states, snps, chr = c(1:19, "X"),
     # Males
 
     # Autosomes
-    if(chr %in% 1:19) {
+    if(!is.na(as.numeric(chr))) {
 
       # There are only two possible changes since we only have 8 states.
       cases = matrix(2, length(states), length(states))
@@ -264,6 +265,102 @@ dof1.trans.probs = function(states, snps, chr = c(1:19, "X"),
 
 } # dof1.trans.probs()
 
+# From Browman, KW, G3, 2012, we can set alpha = 1 for HS transtion probs.
+hs.trans.probs = function(states, snps, chr = 1, 
+                 sex = c("M", "F"), gen) {
+
+  chr = as.character(chr)
+  sex = match.arg(sex)
+
+  alpha = 1
+  names(alpha) = 1
+
+  # Get the unique HS generations.
+  unique.gen = sort(unique(gen))
+  unique.gen = unique.gen[!is.na(unique.gen)]
+
+  # Create the return value list.
+  retval = as.list(1:length(unique.gen))
+  names(retval) = unique.gen
+
+  # Create an empty list of transition probabilities.
+  trans.prob = as.list(unique.gen)
+  names(trans.prob) = unique.gen
+
+  # This holds the case ID of each type of transition probability.
+  cases = matrix(0, length(states), length(states), dimnames = list(states,
+                 states))
+  # Females
+  if(sex == "F") {
+
+      cases = assign.autosome.femaleX.cases(states)
+      for(i in 1:length(unique.gen)) {
+        # Create an array of num.states x num.states x num.snps.  Each row is the
+        # probability that the state in row i will transition to the state in 
+        # column j.
+        retval[[i]] = array(0, dim = c(length(states), length(states),
+                       nrow(snps) - 1), dimnames = list(states, states,
+                       snps[-nrow(snps),1]))
+      } #for(i)
+  } else {
+    # Males
+    # Autosomes
+    if(!is.na(as.numeric(chr))) {
+
+      cases = assign.autosome.femaleX.cases(states)
+
+      for(i in 1:length(unique.gen)) {
+        # Create an array of num.states x num.states x num.snps.  Each row is the
+        # probability that the state in row i will transition to the state in 
+        # column j.
+        retval[[i]] = array(0, dim = c(length(states), length(states),
+                       nrow(snps) - 1), dimnames = list(states, states,
+                       snps[-nrow(snps),1]))
+      } #for(i)
+    } else {
+      # Male X chromosome.
+      founders = sort(unique(unlist(strsplit(states, split = ""))))
+
+      # There are only two possible changes since the male X Chr is hemizygous.
+      cases = matrix(2, length(founders), length(founders))
+      diag(cases) = 1
+
+      # Create a transition probability array for each DO generation.
+      for(i in 1:length(unique.gen)) {
+        # Create an array of num.states x num.states x num.snps.  Each row is the
+        # probability that the state in row i will transition to the state in 
+        # column j.
+        retval[[i]] = array(0, dim = c(length(founders), length(founders),
+                      nrow(snps) - 1), dimnames = list(founders, founders,
+                      snps[-1,1]))
+      } #for(i)
+    } # else
+  } # else
+
+  # Get the transition probabilities and place them in the correct locations.
+  for(i in 1:length(unique.gen)) {
+
+    r = diff(snps[,4]) * 1e-8
+    r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
+    trans.prob = get.trans.probs(r = r, do.gen = unique.gen[i], alpha, chr, sex)
+
+    for(s in 1:(nrow(snps) - 1)) {
+      retval[[i]][,,s] = trans.prob[s,cases]
+    } # for(s)
+
+    retval[[i]] = log(retval[[i]])
+
+    # This takes care of probabilities that were = 0.
+    retval[[i]][is.infinite(retval[[i]])] = -.Machine$double.xmax
+
+  } #for(i)
+
+  return(retval)
+
+} # hs.trans.probs()
+
+
+
 
 # From Broman, KW, the Genomes of Recombinant Inbred Lines, Genetics, 
 # Feb 2005, 169, 1133-1146.
@@ -274,7 +371,7 @@ cc.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
   retval = NULL
 
   # Autosomes.
-  if(chr %in% 1:19) {
+  if(!is.na(as.numeric(chr))) {
 
     curr.snps = which(snps[,2] == chr)
     retval = array(0, c(length(states), length(states), length(curr.snps) - 1), dimnames = 
@@ -282,20 +379,21 @@ cc.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
     r = diff(snps[curr.snps, 4])
     r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
     for(s in 1:(length(curr.snps)-1)) {
-      retval[,,s] = (7 * r[s]) / (1 + 6 * r[s])
-      diag(retval[,,s]) = 1.0 - retval[1,1,s]
+      retval[,,s] = r[s] / (2 + 12 * r[s])
+      diag(retval[,,s]) = (1 - r) / (8 + 48 * r[s])
     } # for(s)
 
   } else if(chr == "X") {
 
+    # NOTE: We don't have the calculations in for males yet.
     curr.snps = which(snps[,2] == chr)
     retval = array(0, c(length(states), length(states), length(curr.snps) - 1), dimnames = 
              list(states, states, snps[curr.snps[-1], 1]))
     r = diff(snps[curr.snps, 4])
     r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
-    for(s in 1:length(curr.snps)) {
-      retval[,,s] = (14.0 / 3.0 * r[s]) / (1 + 4 * r[s])
-      diag(retval[,,s]) = 1.0 - retval[1,1,s]
+    for(s in 1:(length(curr.snps)-1)) {
+      retval[,,s] = r[s] / (2 + 12 * r[s])
+      diag(retval[,,s]) = (1 - r) / (8 + 48 * r[s])
     } # for(s)
 
   } else {
@@ -309,8 +407,8 @@ cc.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
 } # cc.trans.probs()
 
 
-# This function will requre more tuning. The sex chromosomes will need to be added too.
-generic.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
+# This function will require more tuning. The sex chromosomes will need to be added too.
+generic.trans.probs = function(states, snps, chr = "1", sex = c("M", "F")) {
 
   tprob = matrix(0.01, length(states), length(states), dimnames = list(states, states))
   diag(tprob) = 1.0
@@ -346,14 +444,13 @@ generic.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F
 #          represents a different transition case, which is indicated in the
 #          column names.
 ################################################################################
-get.trans.probs = function(r, do.gen, alpha, chr = c(1:19, "X"), 
+get.trans.probs = function(r, do.gen, alpha, chr = "1", 
                            sex = c("M", "F")) {
-  chr = match.arg(chr)
   sex = match.arg(sex)
   trans.prob = NULL
 
   # Autosomes.
-  if(chr %in% c(1:19)) {
+  if(!is.na(as.numeric(chr))) {
 
     # Probability of recombinant haplotype.
     recprob = rep(0.0, length(r))
@@ -568,7 +665,7 @@ get.F1.trans.probs = function(r, do.gen, alpha, chr = c(1:19, "X"),
   trans.prob = NULL
 
   # Autosomes.
-  if(chr %in% c(1:19)) {
+  if(!is.na(as.numeric(chr))) {
 
     # Probability of recombinant haplotype.
     recprob = rep(0.0, length(r))

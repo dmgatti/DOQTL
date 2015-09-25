@@ -1,4 +1,4 @@
-get.mgi.features = function(file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz",
+get.mgi.features = function(file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20140803.sorted.txt.gz",
   chr = NULL, start = NULL, end = NULL,
   source = c("all", "MGI", "VEGA", "ENSEMBL", "Blat", "NCBI_Gene"),
   type = c("all", "gene", "pseudogenic_transcript", "pseudogenic_exon", "pseudogene",

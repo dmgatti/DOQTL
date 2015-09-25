@@ -6,6 +6,8 @@
 # NOTE: Function under development. Currently only handles SNP files.
 ################################################################################
 # Arguments: vcf.file: character string with full path to Sanger VCF file.
+#            gr: GRanges object with one or more ranges to query. Use either
+#                this or the chr, start, end arguments.
 #            chr: character or numeric vector indicating chromosomes.
 #            start: numeric vector containing start positions (in MB or bp).
 #            end: numeric vector containing end positions (in MB or bp).
@@ -17,9 +19,9 @@
 #            return.qual: boolean that is TRUE if the quality scores should be
 #                         returned.
 #            csq: boolean that is TRUE if variant consequence should be returned.
-read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
+read.vcf = function(vcf.file, gr, chr = 1, start = 4, end = 4.5, strains,
            return.val = c("allele", "number"), return.qual = TRUE, csq = FALSE) {
-		   
+
   return.val = match.arg(return.val)
   
   if(missing(vcf.file)) {
@@ -27,32 +29,38 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
          "Sanger Mouse Genomes Project VCF file."))
   } # if(missing(vcf.file))
   
-  if(length(chr) != length(start) | length(chr) != length(end)) {
-    stop(paste("The nubmer of locations in chr, start and end must be equal.\n",
-         "len(chr) =", length(chr), "len(start) =", length(start), "len(end) =",
-         length(end)))
-  } # if(length(chr) != length(start) | ...
+  if(missing(gr)) {
+
+    if(length(chr) != length(start) | length(chr) != length(end)) {
+      stop(paste("The nubmer of locations in chr, start and end must be equal.\n",
+           "len(chr) =", length(chr), "len(start) =", length(start), "len(end) =",
+           length(end)))
+    } # if(length(chr) != length(start) | ...
   
-  if(any(start > end)) {
-    stop(paste("Start cannot be larger than end. Please enter a start position",
-         "that is less than the end position."))
-  } # if(start > end)
+    if(any(start > end)) {
+      stop(paste("Start cannot be larger than end. Please enter a start position",
+           "that is less than the end position."))
+    } # if(start > end)
 
-  # In the mouse, we assume that start values less than 200 are in Mb because
-  # the longest chromosome is less than 200 Mb.
-  if(any(start <= 200)) {
-    start = start * 1e6
-  } # if(start <= 200)
+    # In the mouse, we assume that start values less than 200 are in Mb because
+    # the longest chromosome is less than 200 Mb.
+    if(any(start <= 200)) {
+      start = start * 1e6
+    } # if(start <= 200)
 
-  if(any(end <= 200)) {
-    end = end * 1e6
-  } # if(end <= 200)
+    if(any(end <= 200)) {
+      end = end * 1e6
+    } # if(end <= 200)
+
+    # Create the GRanges object.
+    gr = GRanges(seqnames = chr, ranges = IRanges(start = start, end = end)) 
+
+  } # if(missing(gr))
 
   # Query Tabix indexed VCF file.
   tabix = TabixFile(file = vcf.file)
   open(con = tabix)
   hdr = headerTabix(file = tabix)
-  gr = GRanges(seqnames = chr, ranges = IRanges(start = start, end = end))
   data = scanTabix(file = tabix, param = gr)
   close(con = tabix)
   colnames = sub(hdr$comment, "", hdr$header[length(hdr$header)])
@@ -66,7 +74,7 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
     } # if(!all(strains %in% colnames))
     keep = c(1:9, which(colnames %in% strains))
   } # if(!missing(strains))
-  
+
   if(length(grep("snp", vcf.file)) > 0) {
     retval = read.vcf.snp(data, keep, colnames, csq, return.val, return.qual)
   } else if(length(grep("indel", vcf.file)) > 0) {
@@ -86,46 +94,54 @@ read.vcf = function(vcf.file, chr = 1, start = 4, end = 4.5, strains,
   return(retval)
   
 } # read.vcf()
+
+
 ################################################################################
 # Retrieve SNPs from a Sanger VCF file.
+# This works with the v4 format, but not earlier versions.
 ################################################################################
 read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
 
   data.not.empty = which(sapply(data, length) > 0)
   
   for(i in data.not.empty) {
-  
+
     data[[i]] = strsplit(data[[i]], split = "\t")
     data[[i]] = matrix(unlist(data[[i]]), nrow = length(data[[i]]),
                 byrow = TRUE, dimnames = list(NULL, colnames))
     data[[i]] = data[[i]][,keep,drop = FALSE]
-    
+
+    # Get the format slot in the genotype data (FI column from FORMAT).
+    formatcol = strsplit(data[[i]][1,colnames(data[[i]]) == "FORMAT"], split = ":")[[1]]
+    formatcol = which(formatcol == "FI")
+    stopifnot(length(formatcol) > 0)
+
     # Split up the genotype calls and quality scores.
     d2 = apply(data[[i]][,10:ncol(data[[i]]),drop=FALSE], 2, strsplit, split = ":")
 #    d2 = lapply(d2, function(z) { lapply(z, function(a) { a[c(1,6)] }) })
-    d2 = lapply(d2, lapply, "[", c(1,6))
+    d2 = lapply(d2, lapply, "[", c(1, formatcol))
     geno = matrix(unlist(lapply(d2, sapply, "[", 1)),
            ncol = length(d2), dimnames = list(NULL, names(d2)))
-    qual = matrix(unlist(lapply(d2, sapply, "[", 2)),
+    qual = matrix(as.numeric(unlist(lapply(d2, sapply, "[", 2))),
            ncol = length(d2), dimnames = list(NULL, names(d2)))
     rm(d2)
     gc()
-	
+
     if(return.val == "number") {
-	
+
       geno = sub("/", "", geno)
-      geno = sub("\\.", NA, geno)
       geno = matrix(as.numeric(geno), nrow(geno), ncol(geno), dimnames = 
              dimnames(geno))
 			 
     } else if(return.val == "allele") {
-	
+
       # Create a matrix that maps numeric allele calls to nucleotide allele
       # calls.
       alt = strsplit(data[[i]][,colnames(data[[i]]) == "ALT"], split = ",")
       ref.col = which(colnames(data[[i]]) == "REF")
       alt.len = sapply(alt, length)
       num.alleles = max(alt.len)
+
       # Make this matrix of size num.alleles + 1 so that missing values can
       # be set to num.alleles + 1.
       repl = matrix("N", nrow = nrow(data[[i]]), ncol = num.alleles + 1)
@@ -137,7 +153,7 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
       } # for(j)
  
       # Replace missing values with "<max.value>/<max.value>"
-      geno[geno == "."] = paste(num.alleles, num.alleles, sep = "/")
+      geno[geno == "./."] = paste(num.alleles, num.alleles, sep = "/")
  
       # Convert the genotypes to a numeric matrix.
       geno = apply(geno, 2, function(z){ 
@@ -169,12 +185,12 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
 	
     # Add the positions and alleles and combine the genotypes and quality
     # scores.
-    pos = data[[i]][,1:5,drop = FALSE]
+    pos  = data[[i]][,1:5,drop = FALSE]
     info = data[[i]][,colnames(data[[i]]) == "INFO"]
-	
+
     if(return.qual) {
 	
-      data[[i]] = data.frame(geno, qual)
+      data[[i]] = data.frame(geno, qual, stringsAsFactors = FALSE)
       # This reorders the data with genotype and quality for each strain
       # next to each other.
       index = rep(1:(ncol(data[[i]])/2), each = 2)
@@ -182,7 +198,7 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
                                          (ncol(data[[i]]) / 2)
       data[[i]] = data[[i]][,index,drop = FALSE]
       colnames(data[[i]]) = sub("\\.1$", "qual", colnames(data[[i]]))
-	  
+
     } else {
 	
       data[[i]] = data.frame(geno, stringsAsFactors = FALSE)
@@ -203,9 +219,12 @@ read.vcf.snp = function(data, keep, colnames, csq, return.val, return.qual) {
         data[[i]] = data.frame(data[[i]], conseq = conseq)
       } # if(length(which.csq) > 0)
     } # if(csq)
+
     data[[i]]$POS = as.numeric(as.character(data[[i]]$POS))
+
   } # for(i)
-  return(data)
+
+  data
   
 } # read.vcf.snp()
 
@@ -234,17 +253,21 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
     qual[is.na(qual)] = "0"
     rm(d2)
     gc()
+
     # NOTE: MISSING VALUES AND REFERENCE ALLELE CALLS ARE BOTH DENOTED AS ".".
-    # geno[geno == "."] = paste(num.alleles, num.alleles, sep = "/")
+    # geno[geno == "./."] = paste(num.alleles, num.alleles, sep = "/")
     # Replace "." calls, which may be reference or missing with "0/0".
-    geno[geno == "."] = "0/0"
-    
+    geno[geno == "./."] = "0/0"
+
     if(return.val == "number") {
+
       geno = sub("/", "", geno)
       geno = sub("\\.", NA, geno)
       geno = matrix(as.numeric(geno), nrow(geno), ncol(geno), dimnames = 
              dimnames(geno))
+
     } else if(return.val == "allele") {
+
       # Create a matrix that maps numeric allele calls to nucleotide allele
       # calls.
       alt = strsplit(data[[i]][,colnames(data[[i]]) == "ALT"], split = ",")
@@ -253,7 +276,7 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
       num.alleles = max(alt.len)
       repl = matrix(NA, nrow = nrow(data[[i]]), ncol = num.alleles + 1)
       repl[,1] = data[[i]][,ref.col]
-      for(j in 1:3) {
+      for(j in 1:num.alleles) {
         rng = which(j <= alt.len)
         repl[rng,j+1] = sapply(alt[rng], function(z) { z[j] })
       } # for(j)
@@ -286,18 +309,23 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
                     dimnames = dimnames(qual))
       rm(g2)
       gc()
+
     } # else if(return.val == "allele")
 
     # Add the positions and alleles and combine the genotypes and quality
     # scores.
-    pos = data[[i]][,1:5]
+    pos  = data[[i]][,1:5, drop = FALSE]
     info = data[[i]][,colnames(data[[i]]) == "INFO"]
-    data[[i]] = data.frame(geno, qual)
-    index = rep(1:(ncol(data[[i]])/2), each = 2)
-    index[2 * 1:(ncol(data[[i]])/2)] = index[2 * 1:(ncol(data[[i]])/2)] + (ncol(data[[i]]) / 2)
-    data[[i]] = data[[i]][,index]
-    colnames(data[[i]]) = sub("1$", "qual", colnames(data[[i]]))
-    data[[i]] = cbind(pos, data[[i]])
+    data[[i]] = data.frame(geno, stringsAsFactors = FALSE)
+    if(return.qual) {
+      data[[i]] = data.frame(data[[i]], qual, stringsAsFactors = FALSE)
+      index = rep(1:(ncol(data[[i]])/2), each = 2)
+      index[2 * 1:(ncol(data[[i]])/2)] = index[2 * 1:(ncol(data[[i]])/2)] + (ncol(data[[i]]) / 2)
+      data[[i]] = data[[i]][,index]
+      colnames(data[[i]]) = sub("1$", "qual", colnames(data[[i]]))
+    } # if(return.qual)
+
+    data[[i]] = data.frame(pos, data[[i]], stringsAsFactors = FALSE)
 
     # If the user has requested variants consequences, add them in the last 
     # column.
@@ -308,12 +336,15 @@ read.vcf.indel = function(data, keep, colnames, csq, return.val, return.qual) {
         tmp = strsplit(info[which.csq], split = ";")
         tmp = sapply(tmp, function(z) { z[grep("^CSQ", z)] })
         conseq[which.csq] = tmp
-        data[[i]] = data.frame(data[[i]], conseq = conseq)
+        data[[i]] = data.frame(data[[i]], conseq = conseq, stringsAsFactors = FALSE)
       } # if(length(which.csq) > 0)
     } # if(csq)
+
+    data[[i]][,2] = as.numeric(data[[i]][,2])
+
   } # for(i)
 
-  return(data)
+  data
   
 } # read.vcf.indel()
 
@@ -398,7 +429,7 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
     # scores.
     pos = data[[i]][,1:5]
     info = data[[i]][,colnames(data[[i]]) == "INFO"]
-    data[[i]] = data.frame(geno, qual)
+    data[[i]] = data.frame(geno, qual, stringsAsFactors = FALSE)
     index = rep(1:(ncol(data[[i]])/2), each = 2)
     index[2 * 1:(ncol(data[[i]])/2)] = index[2 * 1:(ncol(data[[i]])/2)] + 
                                        (ncol(data[[i]]) / 2)
@@ -421,7 +452,7 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
 
   } # for(i)
 
-  return(data)
+  data
   
 } # read.vcf.sv()
 
@@ -431,14 +462,17 @@ read.vcf.sv = function(data, keep, colnames, csq, return.val, return.qual) {
 # Get the strain names available in the requested VCF file.
 ################################################################################
 get.vcf.strains = function(vcf.file) {
+
   # Query Tabix indexed VCF file.
   tabix = TabixFile(file = vcf.file)
   open(con = tabix)
   hdr = headerTabix(file = tabix)
   close(con = tabix)
+
   # Split up the strains.
   strains = sub("^#", "" ,hdr$header[length(hdr$header)])
   strains = strsplit(strains, split = "\t")[[1]]
+
   if(length(grep("snp", vcf.file)) > 0) {
     retval = strains[-1:-9]
   } else if(length(grep("indel", vcf.file)) > 0) {
@@ -449,5 +483,25 @@ get.vcf.strains = function(vcf.file) {
     stop(paste("Unknown file type. The VCF file name must contain one of",
          "snp, indel or SV in order to identify the type of file to parse."))
   } # else
-  return(retval)
+
+  retval
+
 } # get.vcf.strains()
+
+
+################################################################################
+# Get the column names available in the requested VCF file.
+################################################################################
+read.vcf.colnames = function(vcf.file) {
+
+  # Query Tabix indexed VCF file.
+  tabix = TabixFile(file = vcf.file)
+  hdr = headerTabix(file = tabix)
+
+  # Split up the strains.
+  colnames = sub("^#", "" ,hdr$header[length(hdr$header)])
+  colnames = strsplit(colnames, split = "\t")[[1]]
+
+  colnames
+
+} # read.vcf.colnames()
