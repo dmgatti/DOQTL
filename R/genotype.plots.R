@@ -352,4 +352,33 @@ plot.genoprobs.max = function(x, snps, colors, chrlen, offset) {
 
 } # plot.genoprobs.max()
 
+################################################################################
+# Make genotype plots for all of the files in a directory.
+# This requires that the *.Rdata files have been made.
+write.genoprob.plots = function(path = ".", snps, type = c("max", "probs")) {
 
+  type = match.arg(type)
+  files = dir(path, pattern = "genotype.probs.Rdata", full.names = TRUE)
+  
+  if(!is.null(files)) {
+  
+    prsmth = NULL
+    foreach(f = iter(files), .export = c("path", "snps"), .packages = "DOQTL") %dopar% {
+    
+      print(f)
+      
+      # This loads in 'prsmth'.
+      load(f)
+      sample = gsub(paste("^", path, "/|\\.genotype\\.probs\\.Rdata$", sep = ""),
+                    "", f)
+                    
+      png(paste(sample, "genotype.probs.png", sep = "."), width = 1000,
+          height = 1000, res = 144)
+      plot.genoprobs(x = prsmth, snps = snps, type = type, main = sample)
+      dev.off()
+      
+    } # for(f)
+    
+  } # if(!is.null(files))
+  
+} # write.genoprob.plots()
