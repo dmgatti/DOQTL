@@ -363,7 +363,7 @@ write.genoprob.plots = function(path = ".", snps, type = c("max", "probs")) {
   if(!is.null(files)) {
   
     prsmth = NULL
-    foreach(f = iter(files), .export = c("path", "snps"), .packages = "DOQTL") %dopar% {
+    for(f in files) {
     
       print(f)
       
