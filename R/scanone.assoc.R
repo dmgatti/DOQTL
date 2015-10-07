@@ -120,6 +120,8 @@ s1.assoc = function(obj, sdp.file) {
 
   # Get a set of overlaps between the markers and SDP positions.
   sdp.gr = GRanges(seqnames = chr, ranges = IRanges(start = pos, width = 1))
+  # Include 0 and 200 Mb to capture SNPs before the first markers and 
+  # after the last marker.
   markers.gr = GRanges(seqnames = obj$markers[1,2], ranges = IRanges(
                start = c(0, obj$markers[,3]) * 1e6, 
                end = c(obj$markers[,3], 200) * 1e6))
@@ -130,40 +132,50 @@ s1.assoc = function(obj, sdp.file) {
   num.sdps = sum(sapply(unique.sdps, length))
   geno = matrix(0, nrow = nrow(obj$pheno), ncol = num.sdps,
          dimnames = list(rownames(obj$pheno), 1:num.sdps))
+
   # This maps the positions in the geno matrix back to the genomic positions
   # of the SDPs.
   map = rep(0, length(pos))
 
   idx = 0
-  # Start of chromosome, sdps before the first marker.
-  i = 1
-  rng = (idx + 1):(idx + length(unique.sdps[[i]]))
-  geno[,rng] = obj$probs[,,probs.idx[i]] %*% sdp.mat[,unique.sdps[[i]]]
-  map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
-  idx = idx + length(unique.sdps[[i]])
 
-  lrs = 0
+  # Start of chromosome, sdps before the first marker.
+  if(probs.idx[1] == 1) {
+    i = 1
+    # Get the range of SDPs.
+    rng = (idx + 1):(idx + length(unique.sdps[[i]]))
+    # Multiply the first genoprobs by the SDPs before the first marker.
+    geno[,rng] = obj$probs[,,probs.idx[i]] %*% sdp.mat[,unique.sdps[[i]]]
+    # Place the SDPs in the map.
+    map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
+    # Increment the index.
+    idx = idx + length(unique.sdps[[i]])
+  } # if(probs.idx[1] == 1) 
 
   # SDPs bracketed by two markers.
-  for(i in 2:(length(ol)-1)) {
+  wh = which(probs.idx > 1 & probs.idx <= dim(obj$probs)[3])
+  for(i in wh) {
 
     rng = (idx + 1):(idx + length(unique.sdps[[i]]))
-    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i]] + obj$probs[,,probs.idx[i]+1]) %*% sdp.mat[,unique.sdps[[i]]]
+    # Use the mean genoprobs between two markers and multiply by the SDPs.
+    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i-1]] + obj$probs[,,probs.idx[i]]) %*% sdp.mat[,unique.sdps[[i]]]
     map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
     idx = idx + length(unique.sdps[[i]])
 
   } # for(i)
 
   # End of chromosome, sdps after the last marker.
-  i = length(ol)
-  rng = (idx + 1):(idx + length(unique.sdps[[i]]))
-  geno[,rng] = obj$probs[,,probs.idx[i]] %*% sdp.mat[,unique.sdps[[i]]]
-  map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
+  i = length(probs.idx)
+  if(probs.idx[i] > dim(obj$probs)[3]) {
+    rng = (idx + 1):(idx + length(unique.sdps[[i]]))
+    geno[,rng] = obj$probs[,,dim(obj$probs)[3]] %*% sdp.mat[,unique.sdps[[i]]]
+    map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
+  } # if(probs.idx[length(probs.idx)] > dim(obj$probs)[3])
+
+  r2 = 0
 
   # X Chromosome, separate females and males and then combine.
   if(chr == "X") {
-
-    warning("X CHROMOSOME NOT FULLY IMPLEMENTED YET!")
 
     # Verify that sex is one of the covariates.
     if(!any("addcovar" == names(obj))) {
@@ -190,11 +202,6 @@ s1.assoc = function(obj, sdp.file) {
            "set the sex column in addcovar to 0 for females and 1 for males."))
     } # if(length(females) == 0 & length(males) == 0)
 
-    # Fit a model with only sex.
-    sst = sum((obj$pheno[sample.keep, obj$pheno.col] - mean(obj$pheno[sample.keep, obj$pheno.col]))^2)
-    sex.rsq = lsfit(obj$addcovar[sample.keep,], obj$pheno[sample.keep, obj$pheno.col])
-    sex.rsq = 1.0 - sum(sex.rsq$residuals^2) / sst
-
     # Separate the male and female genotypes in the same matrix. This will be 
     # a block matrix with all zeros for females in rows with male samples and
     # all zeros for males in rows with female samples.
@@ -206,13 +213,14 @@ s1.assoc = function(obj, sdp.file) {
          geno = newgeno[sample.keep,,drop = FALSE],
          K = obj$K[sample.keep, sample.keep,drop = FALSE],
          addcovar = obj$addcovar[sample.keep,,drop = FALSE])
-    lrs = r2[1:ncol(geno)] + r2[(ncol(geno)+1):length(r2)] - sex.rsq
+    r2 = r2[1:ncol(geno)] + r2[(ncol(geno)+1):length(r2)]
+    rm(newgeno)
 
   } else {
 
     # Autosomes.
     # Calculate the R^2 for each SDP.
-    lrs = matrixeqtl.snps(pheno = obj$pheno[sample.keep,obj$pheno.col,drop = FALSE],
+    r2 = matrixeqtl.snps(pheno = obj$pheno[sample.keep,obj$pheno.col,drop = FALSE],
           geno = geno[sample.keep,,drop = FALSE],
           K = obj$K[sample.keep,sample.keep,drop = FALSE],
           addcovar = obj$addcovar[sample.keep,,drop = FALSE])
@@ -220,10 +228,10 @@ s1.assoc = function(obj, sdp.file) {
   } # else
 
   # Convert R^2 to LRS.
-  lrs = -length(sample.keep) * log(1.0 - lrs)
+  lrs = -length(sample.keep) * log(1.0 - r2)
 
   # Convert the LRS to p-values.
-  pv = pchisq(2 * lrs, df = 1, lower.tail = FALSE)
+  pv = pchisq(lrs, df = 1, lower.tail = FALSE)
 
   # Place the results in the correct locations and return.
   return(GRanges(seqnames = Rle(chr, length(pos)), ranges = IRanges(start = pos, 
@@ -246,7 +254,8 @@ plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
   names(chrmid) = names(chrlen)
 
   if(missing(chr)) {
-    chr = names(x)
+    autosomes = names(x)[which(!is.na(as.numeric(names(x))))]
+    chr = factor(names(x), levels = c(autosomes, "X", "Y","M"))
   } # if(!missing(chr))
 
   pos = lapply(x, start)
@@ -275,7 +284,7 @@ plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
   # If we are plotting more than one chormosome, color alternate 
   # chromosomes grey and black.
   col = 1
-  chr = rep(names(x), sapply(pos, length))
+  chr = rep(chr, sapply(pos, length))
   if(length(pos) > 1) {
     col = as.numeric(chr) %% 2 + 1
   } # if(length(chr) > 1)
