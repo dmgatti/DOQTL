@@ -28,7 +28,9 @@
   \code{\link{get.variants}}
 }
 \examples{
-  data(example.snps)
-  snp.subset = get.pattern.variants(example.snps[1:1000,], 
+  \dontrun{
+  vcf = readVcf("vcf_file.tar.gz", param)
+  snp.subset = get.pattern.variants(vcf, 
   strain.subset = c("A/J", "NOD/ShiLtJ", "NZO/HlLtJ", "AKR/J"))
+  }
 }
