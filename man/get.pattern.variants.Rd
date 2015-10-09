@@ -29,8 +29,8 @@
 }
 \examples{
   \dontrun{
-  vcf = readVcf("vcf_file.tar.gz", param)
-  snp.subset = get.pattern.variants(vcf, 
-  strain.subset = c("A/J", "NOD/ShiLtJ", "NZO/HlLtJ", "AKR/J"))
+    vcf = readVcf("vcf_file.tar.gz", param)
+    snp.subset = get.pattern.variants(vcf, 
+    strain.subset = c("A/J", "NOD/ShiLtJ", "NZO/HlLtJ", "AKR/J"))
   }
 }
