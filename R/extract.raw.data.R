@@ -50,12 +50,12 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   x_file = file(paste(out.path, "x.txt", sep = "/"), open = "w")
   y_file = file(paste(out.path, "y.txt", sep = "/"), open = "w")
   g_file = file(paste(out.path, "geno.txt", sep = "/"), open = "w")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = x_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = x_file, sep = "\n")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = y_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = y_file, sep = "\n")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = g_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = g_file, sep = "\n")
+  writeLines(text = snps[-nrow(snps),1], con = x_file, sep = "\t")
+  writeLines(text = snps[nrow(snps),1],  con = x_file, sep = "\n")
+  writeLines(text = snps[-nrow(snps),1], con = y_file, sep = "\t")
+  writeLines(text = snps[nrow(snps),1],  con = y_file, sep = "\n")
+  writeLines(text = snps[-nrow(snps),1], con = g_file, sep = "\t")
+  writeLines(text = snps[nrow(snps),1],  con = g_file, sep = "\n")
 
   call.rate.batch = NULL
   for(i in 1:length(in.path)) {
