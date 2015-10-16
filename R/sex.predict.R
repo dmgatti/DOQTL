@@ -11,6 +11,7 @@
 # Returns: Character vector with sex assignments based on linear discriminant
 #          analysis.
 sex.predict = function(x, y, snps, plot = FALSE) {
+
   if(all(snps[,2] != "X")) {
     stop(paste("There are no X chromosome SNPs in snps. X and Y chromosome",
         "SNPs are required to predict sex."))
@@ -19,11 +20,20 @@ sex.predict = function(x, y, snps, plot = FALSE) {
     stop(paste("There are no Y chromosome SNPs in snps. X and Y chromosome",
         "SNPs are required to predict sex."))
   }
+
+  # Convert X and Y to matrices, if needed.
+  if(!is.matrix(x)) {
+    x = as.matrix(x)
+  } # if(!is.matrix(x))
+  if(!is.matrix(y)) {
+    y = as.matrix(y)
+  } # if(!is.matrix(y))
+
   # Synch up the X & Y SNPs.
-  x = as.matrix(x)
-  y = as.matrix(y)
   x = x[,colnames(x) %in% snps[,1]]
   y = y[,colnames(y) %in% snps[,1]]
+  snps = snps[match(colnames(x), snps[,1]),]
+
   # Keep the X and Y chromosome data.
   x.rng = which(snps[,2] == "X")
   x.int = rowMeans(x[,x.rng] + y[,x.rng], na.rm = TRUE)
