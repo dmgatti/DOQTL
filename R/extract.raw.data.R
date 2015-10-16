@@ -30,20 +30,26 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   
   snps = NULL
   if(array == "muga") {
+
     # We need the next line to satisfy R CMD check --as-cran
     muga_snps = NULL
     load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
     snps = muga_snps
+
   } else if(array == "megamuga") {
+
     # We need the next line to satisfy R CMD check --as-cran
     MM_snps = NULL
     load(url("ftp://ftp.jax.org/MUGA/MM_snps.Rdata"))
     snps = MM_snps
+
   } else if(array == "gigamuga") {
+
     # We need the next line to satisfy R CMD check --as-cran
     GM_snps = NULL
     load(url("ftp://ftp.jax.org/MUGA/GM_snps.Rdata"))
-    snps = GM_snps
+    snps = GM_snps[-grep("^CTRL", GM_snps[,1]),]
+
    } # else
 
   # Write out headers for the files.  This will overwrite existing files.
@@ -58,6 +64,7 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   writeLines(text = snps[nrow(snps),1],  con = g_file, sep = "\n")
 
   call.rate.batch = NULL
+
   for(i in 1:length(in.path)) {
 
     # Get the sample IDs from the Sample_Map.txt file.
@@ -74,29 +81,35 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     samples = samples[nchar(samples) > 0]
 
     # Find a file with "FinalReport" in the filename.
-    rawfile = dir(path = in.path[i], pattern = "FinalReport", full.names = TRUE)
-    rawfile = rawfile[grep("txt", rawfile)]
+    reportfile = dir(path = in.path[i], pattern = "FinalReport", full.names = TRUE)
+    reportfile = reportfile[grep("txt", reportfile)]
 
     # If not found, then quit.
-    if(length(rawfile) == 0) {
+    if(length(reportfile) == 0) {
       stop(paste("No file with 'FinalReport' in the filename was found in directory",
            in.path[i], ".  Please make sure that the FinalReport file is unzipped and",
            "in the specified directory."))
-    } # if(length(rawfile) == 0)
+    } # if(length(reportfile) == 0)
 
     # If there is more than one FinalReport file, then quit.
-    if(length(rawfile) > 1) {
+    if(length(reportfile) > 1) {
       stop(paste("There is more than one file with FinalReport in the filename.",
            "Please place only one data set in each directory."))
-    } # if(length(rawfile) > 1)
+    } # if(length(reportfile) > 1)
 
     # Read in the first sample.  The current format requires us to skip 9 lines
     # because there is no comment delimiter at the top of the file.
-    print(paste("Reading", rawfile, "..."))
-    rawfile = file(rawfile, open = "r")
+    print(paste("Reading", reportfile, "..."))
+    rawfile = file(reportfile, open = "r")
     data = readLines(con = rawfile, n = 10)
     hdr = strsplit(data, split = "\t")
+    # Print number of SNPs and samples.
+    print(paste(hdr[[5]], collapse = " "))
+    print(paste(hdr[[7]], collapse = " "))
     cn = hdr[[10]]
+
+    # Get number of SNPs.
+    num.snps = as.numeric(hdr[[5]][2])
 
     # Verify that we have all of the column names that we expect.
     column.names = c("SNP Name", "Sample ID", "X", "Y", "Allele1 - Forward",
@@ -113,28 +126,44 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     # We read the files in and write them out to conserve memory. As computers
     # get larger, we may be able to keep everything in memory.
     for(j in 1:length(samples)) {
+
       # Read in the data for one sample.
-      data = readLines(con = rawfile, n = nrow(snps))
+      data = readLines(con = rawfile, n = num.snps)
       data = strsplit(data, split = "\t")
-      data = matrix(unlist(data), nrow = length(data[[1]]), ncol = nrow(snps))
+      data = matrix(unlist(data), nrow = length(data[[1]]), ncol = length(data))
       dimnames(data) = list(cn, data[1,])
+
+      # Check that we have only one sample in this chunk.
+      unique.sample = unique(data[2,])
+      if(length(unique.sample) > 1) {
+
+        stop(paste("The number of SNPs per sample dose not match the expected",
+             "number in", reportfile))
+
+      } # if(length(unique.sample) > 1)
+
       samples.in.data[j] = data[rownames(data) == "Sample ID",1]
       print(paste("Sample", j, "of", length(samples), ":", samples.in.data[j]))
       if(!missing(prefix)) {
         samples.in.data[j] = paste(prefix[i], samples.in.data[j], sep = "")
       } # if(!missing(prefix)) 
+
       # Sort the data to match the SNP order.
-      data = data[,match(snps$SNP_ID, colnames(data))]
+      data = data[,colnames(data) %in% snps[,1]]
+      data = data[,match(snps[,1], colnames(data))]
+
       # X
       writeLines(samples.in.data[j], con = x_file, sep = "\t")
       xint = data[rownames(data) == "X",]
       writeLines(xint[-length(xint)], con = x_file, sep = "\t")
       writeLines(xint[length(xint)], con = x_file)
+
       # Y
       writeLines(samples.in.data[j], con = y_file, sep = "\t")
       yint = data[rownames(data) == "Y",]
       writeLines(yint[-length(yint)], con = y_file, sep = "\t")
       writeLines(yint[length(yint)], con = y_file)
+
       # Genotype
       geno = paste(data[rownames(data) == "Allele1 - Forward",],
              data[rownames(data) == "Allele2 - Forward",], sep = "")
