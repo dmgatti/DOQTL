@@ -91,7 +91,8 @@ scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, markers,
 s1.assoc = function(obj, sdp.file) {
 
   # Get the samples that are not NA for the current phenotype.
-  sample.keep = which(!is.na(obj$pheno[,obj$pheno.col]))
+  sample.keep = which(!is.na(obj$pheno[,obj$pheno.col]) & 
+                      rowSums(is.na(obj$addcovar)) == 0)
 
   # Calculate variance components and change each kinship matrix to be the
   # error covariance correction matrix.
