@@ -97,7 +97,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(!missing(addcovar)) {
 
     addcovar = as.matrix(addcovar)
-    samples = intersect(samples, rownames(addcovar))
+    samples = intersect(rownames(pheno), rownames(addcovar))
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
     addcovar = addcovar[samples,,drop = FALSE]
     pheno = pheno[samples,,drop = FALSE]
@@ -119,10 +119,12 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
 
   } # if(!missing(addcovar))
   
-  pheno = pheno[samples,,drop = FALSE]
-  probs = probs[samples,,]
+  pheno = pheno[rownames(pheno) %in% samples,,drop = FALSE]
+  probs = probs[dimnames(probs)[[1]] %in% samples,,]
+  probs = probs[match(rownames(pheno), dimnames(probs)[[1]]),,]
   K = as.matrix(K)
-  K = K[samples, samples]
+  K = K[rownames(K) %in% samples, colnames(K) %in% samples]
+  K = K[match(rownames(pheno), rownames(K)), match(rownames(pheno), colnames(K))]
   print(paste("Mapping with", nrow(pheno), "samples."))
   stopifnot(all(rownames(pheno) == dimnames(probs)[[1]]))
   stopifnot(all(rownames(pheno) == rownames(K)))
@@ -812,7 +814,7 @@ dohap2sanger = function(sanger, probs, snps)
 #                       should be shown.
 #            ...: arguments to be passed to plot.
 assoc.plot = function(results, 
-  mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20140803.sorted.txt.gz",
+  mgi.file = "ftp://ftp.jax.org/SNPtools/genes/MGI.sorted.txt.gz",
   highlight, highlight.col = "red", thr, show.sdps = FALSE, ...) {
 
   old.par = par(no.readonly = TRUE)
