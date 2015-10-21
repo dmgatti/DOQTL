@@ -86,7 +86,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   
   # Subset all of the data to only contain the samples in common.
   pheno = pheno[!is.na(pheno[,pheno.col]),,drop = FALSE]
-  samples = intersect(rownames(pheno), dimnames(probs)[[1]])
+  samples = intersect(rownames(pheno), rownames(probs))
   
   if(length(samples) == 0) {
     stop(paste("rownames(pheno) does not contain any sample IDs that",
@@ -97,7 +97,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   if(!missing(addcovar)) {
 
     addcovar = as.matrix(addcovar)
-    samples = intersect(rownames(pheno), rownames(addcovar))
+    samples = intersect(samples, rownames(addcovar))
     addcovar = addcovar[rownames(addcovar) %in% samples,,drop = FALSE]
     addcovar = addcovar[samples,,drop = FALSE]
     pheno = pheno[samples,,drop = FALSE]
