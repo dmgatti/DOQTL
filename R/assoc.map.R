@@ -473,7 +473,7 @@ assoc.scan1 = function(pheno, pheno.col, probs, K, addcovar, sdps,
 
   } else if(output == "p-value") {
 
-    stat = pchisq(q = 2 * lrs, df = 1, lower.tail = FALSE)[unique.geno$map]
+    stat = pchisq(q = lrs, df = 1, lower.tail = FALSE)[unique.geno$map]
     return(data.frame(chr = rep(markers[1,2], length(stat)), 
            sdp = sdps, p.value = stat))
 
