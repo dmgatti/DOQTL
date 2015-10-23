@@ -268,7 +268,7 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     g2 = h5read(file = h5tempfile, name = paste0(info$name[i], "/g"))
 
     xy = split(xy, chr.factor)
-    g2  = split(g2,  chr.factor)
+    g2  = split(g2, chr.factor)
 
     for(j in 1:length(chr)) {
 
@@ -313,26 +313,29 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   } # if(nrow(info) > 100)
 
   # Create a dataset for each chromosome in X, Y and G.
-  for(i in chr) {
+  for(i in chr[!is.na(chr)]) {
+
+    print(paste("Writing Chr", i))
 
     # X
     h5createDataset(file = h5filename, dataset = paste0("/X/", i),
-                    dims = c(nrow(info), num.markers.on.chr),
-                    chunk = c(chunk, num.markers.on.chr), showWarnings = FALSE)
+                    dims = c(nrow(info), num.markers.on.chr[i]),
+                    chunk = c(chunk, num.markers.on.chr[i]), showWarnings = FALSE)
     h5grp = H5Gopen(h5loc = h5file, name = "/X")
     h5writeDataset(obj = x[[i]], h5loc = h5grp, name = i)
 
     # Y
     h5createDataset(file = h5filename, dataset = paste0("/Y/", i),
-                    dims = c(nrow(info), num.markers.on.chr),
-                    chunk = c(chunk, num.markers.on.chr), showWarnings = FALSE)
+                    dims = c(nrow(info), num.markers.on.chr[i]),
+                    chunk = c(chunk, num.markers.on.chr[i]), showWarnings = FALSE)
     h5grp = H5Gopen(h5loc = h5file, name = "/Y")
     h5writeDataset(obj = y[[i]], h5loc = h5grp, name = i)
 
     # G
     h5createDataset(file = h5filename, dataset = paste0("/G/", i),
-                    dims = c(nrow(info), num.markers.on.chr),
-                    chunk = c(chunk, num.markers.on.chr), showWarnings = FALSE)
+                    dims = c(nrow(info), num.markers.on.chr[i]),
+                    storage.mode = "character", size = 1,
+                    chunk = c(chunk, num.markers.on.chr[i]), showWarnings = FALSE)
     h5grp = H5Gopen(h5loc = h5file, name = "/G")
     h5writeDataset(obj = g[[i]], h5loc = h5grp, name = i)
 

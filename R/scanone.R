@@ -152,19 +152,50 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
 ################################################################################
 # Help functions for scanone().
-synch.sample.IDs = function(vars) {
+synch.sample.IDs = function(pheno, probs, K = NULL, addcovar = NULL, intcovar = NULL) {
 
-  use = which(sapply(vars, is.null))
-  samples = unique(unlist(lapply(vars[use], rownames)))
-  for(i in use) {
-    if(length(dim(vars[[i]])) == 2) {
-      vars[[i]] = vars[[i]][samples,,drop = FALSE]
-    } else if(length(dim(vars[[i]])) == 3) {
-      vars[[i]] = vars[[i]][samples,,,drop = FALSE]
-    }
-  } # for(i)
+   # Get the subset of common samples.
+  samples = intersect(rownames(pheno), rownames(probs))
+  if(!is.null(K)) {
+    if(is.list(K)) {
+      samples = intersect(samples, rownames(K[[1]]))
+    } else {
+      samples = intersect(samples, rownames(K))
+    } # else
+  } # if(!missing(K))
 
-  return(vars)
+  if(!is.null(addcovar)) {
+    samples = intersect(samples, rownames(addcovar))
+  } # if(!missing(addcovar))
+
+  if(!is.null(intcovar)) {
+    samples = intersect(samples, rownames(addcovar))
+  } # if(!missing(intcovar))
+
+  # Synch up the samples.
+  pheno = pheno[samples,,drop = FALSE]
+  probs = probs[samples,,,drop = FALSE]
+
+  if(!is.null(K)) {
+    if(is.list(K)) {
+      for(i in 1:length(K)) {
+        K[[i]] = K[[i]][samples, samples]
+      } # for(i)
+    } else {
+        K = K[samples, samples]
+    } # else
+  } # if(!missing(K))
+
+  if(!is.null(addcovar)) {
+    addcovar = addcovar[samples,, drop = FALSE]
+  } # if(!missing(addcovar))
+
+  if(!is.null(intcovar)) {
+    intcovar = intcovar[samples,, drop = FALSE]
+  } # if(!missing(intcovar))
+
+  return(list(pheno = pheno, probs = probs, K = K, addcovar = addcovar, 
+         intcovar = intcovar))
 
 } # synch.sample.IDs()
 
