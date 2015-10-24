@@ -265,7 +265,7 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   for(i in 1:nrow(info)) {
 
     xy = data.frame(h5read(file = h5tempfile, name = paste0(info$name[i], "/xy")))
-    g2 = h5read(file = h5tempfile, name = paste0(info$name[i], "/g"))
+    g2 = as.vector(h5read(file = h5tempfile, name = paste0(info$name[i], "/g")))
 
     xy = split(xy, chr.factor)
     g2  = split(g2, chr.factor)
@@ -334,7 +334,7 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     # G
     h5createDataset(file = h5filename, dataset = paste0("/G/", i),
                     dims = c(nrow(info), num.markers.on.chr[i]),
-                    storage.mode = "character", size = 1,
+                    storage.mode = "character", size = 2,
                     chunk = c(chunk, num.markers.on.chr[i]), showWarnings = FALSE)
     h5grp = H5Gopen(h5loc = h5file, name = "/G")
     h5writeDataset(obj = g[[i]], h5loc = h5grp, name = i)
