@@ -7,7 +7,10 @@
 #                   coef: matrix with model coeffieints.
 #            stat.name: character, the name of the mapping statistic to plot.
 #                       Must be one of "lod" or "neg.log10.p".
-#            sig.thr: vector, numeric, a set of significane thresholds to plot.
+#            sig.thr: matrix, numeric, a set of significance thresholds to plot.
+#                     Columns should be names "A" and "X" in that order and
+#                     should contain threhsolds for each chromosome obtained
+#                     from get.sig.thr().
 #            sig.col: vector, color, a set of colors to use for each
 #                     significance threshold. Must be same length as sig.thr.
 # To plot a subset of chromosomes, feed in a subset of SNPs.
@@ -15,18 +18,23 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
              sig.col = "red", ...) {
   
   doqtl = x
+
   chrlen = get.chr.lengths()
+
   stat.name = match.arg(stat.name)
+
   # Get the call and arguments.
   call = match.call()
   lod = doqtl$lod$A
   if(any(names(doqtl$lod) == "X")) {
     lod = rbind(doqtl$lod$A, doqtl$lod$X)
   } # if(length(lod) > 1)
+
   # Get chr lengths and locations.  Create an x-axis based on Genome Mb.
   if(max(lod[,3], na.rm = TRUE) > 200) {
     lod[,3] = lod[,3] * 1e-6
   } # if(max(lod[,3]) > 200)
+
   mb = lod[,3]
   gmb = mb
   unique.chr = as.character(unique(lod[,2]))
@@ -35,17 +43,22 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
   unique.chr = unique.chr[order(as.numeric(unique.chr))]
   options(warn = old.warn)
   chrlen = chrlen[names(chrlen) %in% unique.chr]
+
   if(max(chrlen) > 200) {
     chrlen = chrlen * 1e-6
   } # if(max(chrlen) > 200)
-  chrlen = cumsum(chrlen)
-  chrlen = c(0, chrlen)
-  chrmid = chrlen[-length(chrlen)] + (diff(chrlen) * 0.5)
+
+  # Get the cumulative sum of the Chr lengths.
+  chrsum = cumsum(chrlen)
+  chrsum = c(0, chrsum)
+  chrmid = chrsum[-length(chrsum)] + (diff(chrsum) * 0.5)
+
   # Add the preceeding chromosome lengths to each SNP position.
   for(c in 2:length(unique.chr)) {
     rows = which(lod[,2] == unique.chr[c])
-    gmb[rows] = gmb[rows] + chrlen[c]
+    gmb[rows] = gmb[rows] + chrsum[c]
   } # for(c)
+
   # Make the basic plot.
   plot.column = which(colnames(lod) == stat.name)
   if(length(plot.column) == 0) {
@@ -72,15 +85,15 @@ plot.doqtl = function(x, stat.name = c("lod", "neg.log10.p"),  sig.thr = NULL,
   lod = cbind(lod, gmb)
   lod = split(lod, lod[,2])
   usr = par("usr")
-  rect(chrlen[2 * 1:(length(chrlen) * 0.5) - 1], usr[3],
-       chrlen[2 * 1:(length(chrlen) * 0.5)], usr[4], col = rgb(0.8,0.8,0.8),
+  rect(chrsum[2 * 1:(length(chrsum) * 0.5) - 1], usr[3],
+       chrsum[2 * 1:(length(chrsum) * 0.5)], usr[4], col = rgb(0.8,0.8,0.8),
        border = NA)
   rect(usr[1], usr[3], usr[2], usr[4], border = 1)
-  text(chrmid, 0.95 * usr[4], names(chrlen)[-1])
+  text(chrmid, 0.95 * usr[4], names(chrsum)[-1])
   lapply(lod, function(z) { points(z$gmb, z[,plot.column], type = "l", lwd = 2)})
 
   if(!is.null(sig.thr)) {
-    abline(h = sig.thr, col = sig.col)
+    add.sig.thr(sig.thr = sig.thr, sig.col = sig.col, chrsum = chrsum)
   } # if(!is.null(sig.thr))
 
 } # plot.doqtl()
