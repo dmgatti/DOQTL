@@ -15,10 +15,13 @@
     Character string containing the name of the mapping statistic.
   }
   \item{sig.thr}{
-    Numeric vector containing significance thresholds.
+    Numeric matrix containing significance thresholds. Columns must be 
+    labelled "A" and "X", in that order and should contain thresholed
+    produced by \code{\link{get.sig.thr()}}.
   }
   \item{sig.col}{
-    Colors to use when plotting the significance thresholds above. 
+    Colors to use when plotting the significance thresholds above. Must be the
+    same length as the nuber of rows in sig.thr.
   }
   \item{...}{
     Additional arguments to pass to plot.

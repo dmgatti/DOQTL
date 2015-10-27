@@ -40,11 +40,13 @@ scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, markers,
   } # if(any(markers[,3] > 200)
 
   # Synch up the sample IDs.
-  samples = intersect(intersect(rownames(pheno), rownames(addcovar)),
-            rownames(probs))
-  pheno = pheno[samples,,drop = FALSE]
-  addcovar = as.matrix(addcovar[samples,,drop = FALSE])
-  probs = probs[samples,,]
+  tmp = synch.sample.IDs(pheno = pheno, probs = probs, K = K, addcovar = addcovar)
+  pheno = tmp$pheno
+  addcovar = tmp$addcovar
+  probs = tmp$probs
+  K = tmp$K
+  rm(tmp)
+  gc()
 
   # Get the unique chromosomes.
   chr = unique(markers[,2])
@@ -159,7 +161,7 @@ s1.assoc = function(obj, sdp.file) {
 
     rng = (idx + 1):(idx + length(unique.sdps[[i]]))
     # Use the mean genoprobs between two markers and multiply by the SDPs.
-    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i-1]] + obj$probs[,,probs.idx[i]]) %*% sdp.mat[,unique.sdps[[i]]]
+    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i] - 1] + obj$probs[,,probs.idx[i]]) %*% sdp.mat[,unique.sdps[[i]]]
     map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
     idx = idx + length(unique.sdps[[i]])
 
@@ -242,7 +244,8 @@ s1.assoc = function(obj, sdp.file) {
 
 
 # Plotting for scanone.assoc.
-plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
+plot.scanone.assoc = function(x, chr, bin.size = 1000, sig.thr, 
+                     sig.col = "red", ...) {
 
   if(!missing(chr)) {
     x = x[names(x) %in% chr]
@@ -250,13 +253,13 @@ plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
 
   chrlen = get.chr.lengths()
   chrlen = chrlen[names(chrlen) %in% names(x)]
-  chrlen = cumsum(chrlen)
-  chrmid = c(0, chrlen[-length(chrlen)]) + diff(c(0, chrlen)) * 0.5
-  names(chrmid) = names(chrlen)
+  chrsum = cumsum(chrsum)
+  chrmid = c(0, chrsum[-length(chrsum)]) + diff(c(0, chrsum)) * 0.5
+  names(chrmid) = names(chrsum)
 
   if(missing(chr)) {
     autosomes = names(x)[which(!is.na(as.numeric(names(x))))]
-    chr = factor(names(x), levels = c(autosomes, "X", "Y","M"))
+    chr = factor(names(x), levels = c(autosomes, "X", "Y", "M"))
   } # if(!missing(chr))
 
   pos = lapply(x, start)
@@ -273,7 +276,7 @@ plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
     for(i in 1:(length(bins)-1)) {
       wh = which.min(pv[[c]][bins[i]:bins[i+1]])
       wh = wh + bins[i] - 1
-      pos2[i] = pos[[c]][wh] * 1e-6 + max(0, chrlen[c - 1])
+      pos2[i] = pos[[c]][wh] * 1e-6 + max(0, chrsum[c - 1])
       pv2[i]  = pv[[c]][wh]
     } # for(i)
 
@@ -299,6 +302,12 @@ plot.scanone.assoc = function(x, chr, bin.size = 10000, ...) {
     axis(side = 1)
 
   } # if(length(pos) == 1)
+
+  if(!missing(sig.thr)) {
+
+   add.sig.thr(sig.thr = sig.thr, sig.col = sig.col, chrsum = chrsum)
+
+  } # if(!missing(sig.thr))
 
 } # plot.scanone.assoc()
 
