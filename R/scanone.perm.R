@@ -83,7 +83,7 @@ scanone.perm = function(pheno, pheno.col = 1, probs, K = K, addcovar, intcovar, 
            LETTERS[1:8], sep = "."), snps[X.snps,1]))
 
   # Get the sex of the samples and place the probs in the correct columns.
-  sex.col = grep("^sex", colnames(addcovar), ignore.case = TRUE)
+  sex.col = grep("^sex$", colnames(addcovar), ignore.case = TRUE)
   sex = as.numeric(factor(addcovar[,sex.col])) - 1
   females = which(sex == 0)
   males   = which(sex == 1)
