@@ -303,7 +303,7 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
 
         # Additive covariates only.
         x.qtl = fast.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
-                addcovar = addcovar[keep,-1,drop = FALSE],
+                addcovar = addcovar[keep,,drop = FALSE],
                 snps = snps[xchr,])
 
       } else {
