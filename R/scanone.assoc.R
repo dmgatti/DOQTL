@@ -14,7 +14,9 @@
 #                   names must be in dimnames(probs)[[3]].
 #            K: List of kinship matrices, one per chromosome in markers.
 #            addcovar: data.frame of additive covariates to use in the mapping.
-#                      Samnple IDs must be in rownames.
+#                      Sample IDs must be in rownames.
+#            intcovar: data.frame of a singel interactive covariate to use in 
+#                      the mapping. Sample IDs must be in rownames.
 #            markers: data.frame containing at least 3 columns with marker names
 #                     chr, Mb postion.
 #            sdp.file: character string containing the full path to the Sanger
@@ -24,7 +26,7 @@
 ################################################################################
 # Contains scanone.assoc, s1.assoc, plot.scanone.assoc
 ################################################################################
-scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, markers,
+scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, intcovar, markers,
                 cross = c("DO", "CC", "HS"), sdp.file, ncl) {
 
   cl = makeCluster(ncl)
@@ -64,7 +66,7 @@ scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, markers,
   } # for(i)
   names(data) = names(chr)
 
-  rm(samples, probs, markers, K, addcovar)
+  rm(probs, markers, K, addcovar)
 
   # Load the required libraries on the cores.
   clusterEvalQ(cl = cl, expr = library(DOQTL))
@@ -161,7 +163,8 @@ s1.assoc = function(obj, sdp.file) {
 
     rng = (idx + 1):(idx + length(unique.sdps[[i]]))
     # Use the mean genoprobs between two markers and multiply by the SDPs.
-    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i] - 1] + obj$probs[,,probs.idx[i]]) %*% sdp.mat[,unique.sdps[[i]]]
+    geno[,rng] = 0.5 * (obj$probs[,,probs.idx[i] - 1] + obj$probs[,,probs.idx[i]]) %*% 
+                 sdp.mat[,unique.sdps[[i]]]
     map[ol[[i]]] = match(sdps[ol[[i]]], unique.sdps[[i]]) + idx
     idx = idx + length(unique.sdps[[i]])
 
@@ -253,7 +256,7 @@ plot.scanone.assoc = function(x, chr, bin.size = 1000, sig.thr,
 
   chrlen = get.chr.lengths()
   chrlen = chrlen[names(chrlen) %in% names(x)]
-  chrsum = cumsum(chrsum)
+  chrsum = cumsum(chrlen)
   chrmid = c(0, chrsum[-length(chrsum)]) + diff(c(0, chrsum)) * 0.5
   names(chrmid) = names(chrsum)
 
