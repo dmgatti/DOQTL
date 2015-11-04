@@ -1,5 +1,5 @@
-scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
-          model = c("additive", "full")) {
+scanone = function(pheno, pheno.col = 1, probs = NULL, K = NULL, addcovar = NULL,
+          intcovar = NULL, snps = NULL, model = c("additive", "full")) {
 
   model = match.arg(model)
 
@@ -7,7 +7,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
     stop("rownames(pheno) is null. The sample IDs must be in rownames(pheno).")
   } # if(is.null(rownames(pheno)))
 
-  if(missing(addcovar)) {
+  if(is.null(addcovar)) {
     stop(paste("You must map using \\'sex\\' as an additive covariate. Also,",
          "we require sex to map on the X chromosome. We even require sex if",
          "you are only mapping with one sex."))
@@ -23,11 +23,11 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
     stop("rownames(addcovar) is null. The sample IDs must be in rownames(addcovar).")
   } # if(is.null(rownames(addcovar)))
 
-  if(!missing(intcovar)) {
+  if(!is.null(intcovar)) {
     if(is.null(rownames(intcovar))) {
       stop("rownames(intcovar) is null. The sample IDs must be in rownames(intcovar).")
     } # if(is.null(rownames(intcovar)))
-  } # if(!missing(intcovar))
+  } # if(!is.null(intcovar))
 
   snps[,2] = as.character(snps[,2])
 
@@ -76,7 +76,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
   addcovar = as.matrix(addcovar)
 
   # Match sample IDs in interactive covariates.
-  if(!missing(intcovar)) {
+  if(!is.null(intcovar)) {
 
     intcovar = as.matrix(intcovar)
     intcovar = intcovar[rownames(intcovar) %in% rownames(pheno),,drop = FALSE]
@@ -87,7 +87,7 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
   } # if(!is.null(intcovar))
 
-  if(!missing(K)) {
+  if(!is.null(K)) {
 
      # LOCO method.
      if(is.list(K)) {
@@ -102,10 +102,10 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
        K = K[match(rownames(pheno), rownames(K)), match(rownames(pheno), colnames(K))]
      } # else
 
-  } # if(!missing(K))
+  } # if(!is.null(K))
 
   retval = NULL
-  if(missing(K)) {
+  if(is.null(K)) {
     retval = scanone.noK(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
   } else if(is.list(K)) {
     retval = scanone.LOCO(pheno, pheno.col, probs, K, addcovar, intcovar, snps, model)
@@ -296,7 +296,7 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
                                    rowSums(is.nan(addcovar)) == 0 &
                                    rowSums(is.infinite(addcovar)) == 0))
 
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,auto], 
@@ -384,7 +384,7 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
       # With covariates.
       keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
 
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         x.qtl = fast.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
@@ -470,7 +470,7 @@ scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, m
       keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0 & 
                                    rowSums(is.nan(addcovar)) == 0 &
                                    rowSums(is.infinite(addcovar)) == 0))
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         auto.qtl = fast.qtlrel(pheno = p[keep], probs = probs[keep,,auto], 
@@ -548,7 +548,7 @@ scanone.K = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps, m
       } # else if(length(males) > 0)
 
       keep = intersect(keep, which(rowSums(is.na(addcovar)) == 0))
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         x.qtl = fast.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
@@ -629,7 +629,7 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
                                    rowSums(is.nan(addcovar)) == 0 &
                                    rowSums(is.infinite(addcovar)) == 0))
 
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         snprng = which(snps[,2] == 1)
@@ -729,7 +729,7 @@ scanone.LOCO = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps
       } # else if(length(males) > 0)
 
       x.qtl = NULL
-      if(missing(intcovar)) {
+      if(is.null(intcovar)) {
 
         # Additive covariates only.
         x.qtl = qtl.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
