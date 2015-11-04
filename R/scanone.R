@@ -40,41 +40,13 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
   # Get the intersection of all of the sample IDs from pheno, probs, K, 
   # addcovar and intcovar.
-  samples = intersect(rownames(pheno), rownames(probs))
-  if(!missing(K)) {
-    if(is.list(K)) {
-      # We're assuming that all K matrices have the same rownames.
-      samples = intersect(samples, rownames(K[[1]]))
-    } else {
-      samples = intersect(samples, rownames(K))
-    } # else
-  } # if(!missing(K))
-
-  samples = intersect(samples, rownames(addcovar))
-
-  if(!missing(intcovar)) {
-    samples = intersect(samples, rownames(intcovar))
-  } # if(!missing(intcovar))
-
-  # Subset the data to include only samples in common.
-  pheno = pheno[samples,, drop = FALSE]
-  probs = probs[samples,,]
-
-  if(!missing(K)) {
-    if(is.list(K)) {
-      for(c in 1:length(K)) {
-        K[[c]] = K[[c]][samples, samples]
-      } # for(c)
-    } else {
-        K = K[samples, samples]
-    } # else
-  } # if(!missing(K))
-
-  addcovar = addcovar[samples,, drop = FALSE]
-
-  if(!missing(intcovar)) {
-    intcovar = intcovar[samples,, drop = FALSE]
-  } # if(!missing(intcovar))
+  tmp = synch.sample.IDs(pheno = pheno, probs = probs, K = K, addcovar = addcovar,
+        intcovar = intcovar)
+  pheno = tmp$pheno
+  probs = tmp$probs
+  K = tmp$K
+  addcovar = tmp$addcovar
+  intcovar = tmp$intcovar
 
   print(paste("Mapping with", nrow(pheno),"samples."))
 
@@ -152,19 +124,132 @@ scanone = function(pheno, pheno.col = 1, probs, K, addcovar, intcovar, snps,
 
 ################################################################################
 # Help functions for scanone().
-synch.sample.IDs = function(vars) {
+synch.sample.IDs = function(pheno = NULL, probs = NULL, K = NULL, addcovar = NULL,
+                   intcovar = NULL) {
 
-  use = which(sapply(vars, is.null))
-  samples = unique(unlist(lapply(vars[use], rownames)))
-  for(i in use) {
-    if(length(dim(vars[[i]])) == 2) {
-      vars[[i]] = vars[[i]][samples,,drop = FALSE]
-    } else if(length(dim(vars[[i]])) == 3) {
-      vars[[i]] = vars[[i]][samples,,,drop = FALSE]
-    }
-  } # for(i)
+  samples = NULL
 
-  return(vars)
+  # pheno
+  if(!is.null(pheno)) {
+      samples = rownames(pheno)
+  } # if(!is.null(pheno))
+
+  # probs
+  if(!is.null(probs)) {
+
+    if(is.null(samples)) {
+      samples = rownames(probs)
+    } else {
+      samples = intersect(samples, rownames(probs))
+    } # else
+
+  } # if(!is.null(probs))
+
+  # K
+  if(!is.null(K)) {
+
+    if(is.null(samples)) {
+
+      if(is.list(K)) {
+        samples = rownames(K[[1]])
+      } else {
+        samples = rownames(K)
+      } # else
+
+    } else {
+      if(is.list(K)) {
+        samples = intersect(samples, rownames(K[[1]]))
+      } else {
+        samples = intersect(samples, rownames(K))
+      } # else
+    } # else
+
+  } # if(!is.null(probs))
+
+  # addcovar
+  if(!is.null(addcovar)) {
+
+    if(is.null(samples)) {
+      samples = rownames(addcovar)
+    } else {
+      samples = intersect(samples, rownames(addcovar))
+    } # else
+
+  } # if(!is.null(probs))
+
+  # intcovar
+  if(!is.null(intcovar)) {
+
+    if(is.null(samples)) {
+      samples = rownames(intcovar)
+    } else {
+      samples = intersect(samples, rownames(intcovar))
+    } # else
+
+  } # if(!is.null(probs))
+
+  if(length(samples) == 0) {
+    warning(paste("There were no samples in common among the variables",
+            "passed in. Please make sure that there are rownames in",
+            "common between all variables."))
+  } # if(length(samples) == 0)
+
+  # Now subset all of the variables and return them in a list.
+  retval = NULL
+  if(!is.null(pheno)) {
+    pheno = pheno[samples,,drop = FALSE]
+    retval = list(pheno = pheno)
+  } # if(!is.null(pheno))
+
+  if(!is.null(probs)) {
+    probs = probs[samples,,,drop = FALSE]
+    if(is.null(retval)) {
+      retval = list(probs = probs)
+    } else {
+      retval[[length(retval) + 1]] = probs
+      names(retval)[length(retval)] = "probs"
+    } # else
+  } # if(!is.null(probs))
+
+  if(!is.null(K)) {
+
+    if(is.list(K)) {
+      for(i in 1:length(K)) {
+        K[[i]] = K[[i]][samples, samples]
+      } # for(i)
+    } else {
+      K = K[samples, samples]
+    } # else
+
+    if(is.null(retval)) {
+      retval = list(K = K)
+    } else {
+      retval[[length(retval) + 1]] = K
+      names(retval)[length(retval)] = "K"
+    } # else
+  } # if(!is.null(K))
+
+  if(!is.null(addcovar)) {
+    addcovar = addcovar[samples,,drop = FALSE]
+    if(is.null(retval)) {
+      retval = list(addcovar = addcovar)
+    } else {
+      retval[[length(retval) + 1]] = addcovar
+      names(retval)[length(retval)] = "addcovar"
+    } # else
+  } # if(!is.null(addcovar))
+
+  if(!is.null(intcovar)) {
+    intcovar = intcovar[samples,,drop = FALSE]
+    if(is.null(retval)) {
+      retval = list(intcovar = intcovar)
+    } else {
+      retval[[length(retval) + 1]] = intcovar
+      names(retval)[length(retval)] = "intcovar"
+    } # else
+  } # if(!is.null(intcovar))
+
+  return(retval)
 
 } # synch.sample.IDs()
 
@@ -303,7 +388,7 @@ scanone.noK = function(pheno, pheno.col, probs, addcovar, intcovar, snps, model)
 
         # Additive covariates only.
         x.qtl = fast.qtlrel(pheno = p[keep], probs = mfprobs[keep,,], 
-                addcovar = addcovar[keep,,drop = FALSE],
+                addcovar = addcovar[keep,-1,drop = FALSE],
                 snps = snps[xchr,])
 
       } else {

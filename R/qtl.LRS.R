@@ -158,7 +158,7 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
     addcovar = as.matrix(cbind(Intercept = rep(1, n), addcovar))
     null.var = 1.0 / diag(crossprod(qr.resid(qr(addcovar[,1:(num.addcovar+1)]),
                           pheno)))
-    addcovar = as.matrix(cbind(Intercept = rep(1, n), addcovar, probs[,,1]))
+    addcovar = as.matrix(cbind(addcovar, probs[,,1]))
 
   } # else
 
@@ -172,6 +172,19 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
   females = which(sex == 0)
   males   = which(sex == 1)
 
+  # The range of columns that contain the genotypes.
+  rng = (ncol(addcovar) - dim(probs)[2] + 1):ncol(addcovar)
+
+  # Decide when to use QR or the pseudoinverse.
+  rnk = rep(0, m)
+  for(s in 1:m) {
+    addcovar[,rng] = probs[,,s]
+    rnk[s] = rank.condition(addcovar)$rank
+  } # for(s)
+
+  run.pseudo = which(rnk < ncol(addcovar))
+  run.qr = which(rnk == ncol(addcovar))
+
   for(p in 1:nperm) {
 
     print(paste(p, "of", nperm))
@@ -180,14 +193,22 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
     new.order = rep(0, nrow(pheno))
     new.order[females] = sample(females)
     new.order[males]   = sample(males)
-    pheno = as.matrix(pheno[new.order,])
-    addcovar = addcovar[new.order,]
+    pheno = as.matrix(pheno[new.order,,drop = FALSE])
+    addcovar = addcovar[new.order,,drop = FALSE]
 
+    # First run the SNPs where we can use the QR decomposition.
     # The range of columns that contain the genotypes.
-    rng = (ncol(addcovar) - dim(probs)[2] + 1):ncol(addcovar)
-    for(s in 1:m) {
+    for(s in run.qr) {
       addcovar[,rng] = probs[,,s]
       lrs[s,] = colSums(qr.resid(qr(addcovar), pheno)^2)
+    } # for(s)
+
+    # Then run the SNPs where one of the allele frequencies is too low and
+    # we need to use the pseudo-inverse to solve the regression.
+    for(s in run.pseudo) {
+      addcovar[,rng] = probs[,,s]
+      beta = pseudoinverse(t(addcovar) %*% addcovar) %*% t(addcovar) %*% pheno
+      lrs[s,] = colSums((pheno - addcovar %*% beta)^2)
     } # for(s)
    
     # Note that we get the minimum residual variance to obtain the
