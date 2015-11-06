@@ -18,7 +18,7 @@
   }
   \item{Xchr}{
     Logical value (default = TRUE) that indicates that the permutations contain
-    boht autosomal and X chromosome thresholds.
+    both autosomal and X chromosome thresholds.
   }
 }
 \value{
@@ -27,6 +27,9 @@
 }
 \author{
   Daniel Gatti
+}
+\seealso{
+  \code{\link{get.pgw}}
 }
 \references{
   The X chromosome in quantitative trait locus mapping.
