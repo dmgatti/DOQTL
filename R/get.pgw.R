@@ -37,12 +37,16 @@ get.pgw = function(stat, chr, perms) {
   isX = chr == "X"
 
   # Autosomes
-  q = sapply(lapply(stat[!isX], "<", perms[,"A"]), mean, na.rm = TRUE)
-  pgw[!isX] = 1.0 - (1.0 - q)^(len.all / len.auto)  
+  if(sum(!isX) > 0) {
+    q = sapply(lapply(stat[!isX], "<", perms[,"A"]), mean, na.rm = TRUE)
+    pgw[!isX] = 1.0 - (1.0 - q)^(len.all / len.auto)  
+  } # if(sum(!isX) > 0)
 
   # X chromosome.
-  q = sapply(lapply(stat[isX], "<", perms[,"X"]), mean, na.rm = TRUE)
-  pgw[isX] = 1.0 - (1.0 - q)^(len.all / len.X)  
+  if(sum(isX) > 0) {
+    q = sapply(lapply(stat[isX], "<", perms[,"X"]), mean, na.rm = TRUE)
+    pgw[isX] = 1.0 - (1.0 - q)^(len.all / len.X)  
+  } # if(sum(isX) > 0)
 
   return(pgw)
 
