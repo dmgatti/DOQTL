@@ -31,7 +31,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
   tmpfiles = list(dg = data$geno, fg = founders$geno)
 
   # Loop through each chromosome.
-  foreach(curr.chr = chr) %dopar% {
+  for(curr.chr in chr) {
 
     print(paste("CHR", curr.chr))
 
@@ -168,6 +168,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
       founders$geno[founders$geno == "-"] = "N"
       cur.founders = founders
       cur.founders$states = cur.founders$states$auto
+
       tmp = hmm.allele(data = data, founders = cur.founders, sex = "F", 
             snps = cur.snps, chr = curr.chr, trans.prob.fxn = trans.prob.fxn)
       prsmth = tmp$prob.mats$prsmth

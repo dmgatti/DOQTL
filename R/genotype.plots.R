@@ -378,7 +378,7 @@ write.genoprob.plots = function(path = ".", snps, type = c("max", "probs")) {
       dev.off()
       
     } # for(f)
-    
+
   } # if(!is.null(files))
   
 } # write.genoprob.plots()

@@ -27,7 +27,7 @@
 # Contains scanone.assoc, s1.assoc, plot.scanone.assoc
 ################################################################################
 scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, intcovar, markers,
-                cross = c("DO", "CC", "HS"), sdp.file, ncl) {
+                cross = c("DO", "CC", "HS"), sdp.file, ncl = 1) {
 
   cl = makeCluster(ncl)
   registerDoParallel(cl)
