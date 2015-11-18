@@ -127,18 +127,18 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
         if(method == "allele") {
 
           # Remove founders with too much missing data.
-          remove = which(colMeans(founders$geno == "N") > 0.05)
-          founders$geno = founders$geno[,-remove]
+          remove = which(rowMeans(founders$geno == "N") > 0.05)
+          founders$geno = founders$geno[-remove,]
           founders$sex  = founders$sex[-remove]
           founders$code = founders$code[-remove]
 
         } else if(method == "intensity") {
 
           # Remove founders with too much missing data.
-          remove = which(colSums(founders$x < 0) > 1000)
+          remove = which(rowSums(founders$x < 0) > 1000)
           if(length(remove) > 0) {
-            founders$x = founders$x[,-remove]
-            founders$y = founders$y[,-remove]
+            founders$x = founders$x[-remove,]
+            founders$y = founders$y[-remove,]
             founders$sex  = founders$sex[-remove]
             founders$code = founders$code[-remove]
           } # if(length(remove) > 0)
@@ -167,12 +167,14 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       founders = keep.do.founders(founders)
 
       # Add the genotype states.
+      states = create.genotype.states(LETTERS[1:8], sampletype)
+
       if(method == "allele") {
         founders = list(geno = founders$geno, sex = founders$sex, code = founders$code,
-                   states = create.genotype.states(LETTERS[1:8]))
+                   states = states)
       } else {
         founders = list(x = founders$x, y = founders$y, sex = founders$sex,
-                   code = founders$code, states = create.genotype.states(LETTERS[1:8]))
+                   code = founders$code, states = states)
       } # else
       attr(founders, "method") = method
 
@@ -248,6 +250,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
         names(data$gen)= nm
       } # else
     } # if(sampletype == "DO")
+
 ###############
 ###  DO/F1  ###
 ###############
@@ -274,8 +277,8 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       if(method == "allele") {
 
         # Remove founders with too much missing data.
-        remove = which(colSums(founders$geno == "N") > 5000)
-        founders$geno = founders$geno[,-remove]
+        remove = which(rowSums(founders$geno == "N") > 5000)
+        founders$geno = founders$geno[-remove,]
         founders$sex  = founders$sex[-remove]
         founders$code = founders$code[-remove]
 
@@ -474,6 +477,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
      founders$geno = split(data.frame(t(founders$geno)), snps[,2])
      data$geno = lapply(data$geno, function(z) { as.matrix(t(z)) })
      founders$geno = lapply(founders$geno, function(z) { as.matrix(t(z)) })
+
      # Write data out to temporary files.
      savefxn = function(d, f) { save(d, file = f) }
      mapply(savefxn, data$geno, paste(tmpdir, "/data_geno_chr", names(data$geno),
@@ -486,14 +490,14 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
                      full.names = TRUE)
 
      # Split up the SNPs and order them numerically.
-     snps = split(snps, snps[,2])
+     snps.spl = split(snps, snps[,2])
      old.warn = options("warn")$warn
      options(warn = -1)
-     snps = snps[order(as.numeric(names(snps)))]
+     snps.spl = snps.spl[order(as.numeric(names(snps.spl)))]
      options(warn = old.warn)
      gc()
 
-     calc.genoprob.alleles(data = data, chr = chr, founders = founders, snps = snps,
+     calc.genoprob.alleles(data = data, chr = chr, founders = founders, snps = snps.spl,
                            output.dir = output.dir, trans.prob.fxn = trans.prob.fxn,
                            plot = plot)
 
@@ -544,15 +548,15 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
      founders$y = dir(path = tmpdir, pattern = "founders_y_chr", full.names = TRUE)    
 
      # Split up the SNPs and order them numerically.
-     snps = split(snps, snps[,2])
+     snps.spl = split(snps, snps[,2])
      old.warn = options("warn")$warn
      options(warn = -1)
-     snps = snps[order(as.numeric(names(snps)))]
+     snps.spl = snps.spl[order(as.numeric(names(snps.spl)))]
      options(warn = old.warn)
      gc()
 
      calc.genoprob.intensity(data = data, chr = chr, founders = founders, 
-                             snps = snps, output.dir = output.dir, 
+                             snps = snps.spl, output.dir = output.dir, 
                              trans.prob.fxn = trans.prob.fxn, plot = plot, clust = clust)
 
   } # else if(method = "intensity")

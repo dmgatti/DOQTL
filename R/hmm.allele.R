@@ -25,13 +25,17 @@ hmm.allele = function(data, founders, sex, snps, chr, trans.prob.fxn) {
 
   # Save the initial emission probabilities as pseudocounts.
   pseudocounts = b
-  if(attr(data, "sampletype") == "DO" | attr(data, "sampletype") == "HS" | 
-     attr(data, "sampletype") == "HSrat") {
+  a = NULL
+  if(attr(data, "sampletype") %in% c("DO", "HS", "HSrat")) {
+
     a = trans.prob.fxn(states = founders$states, snps = snps, chr = chr, 
         sex = sex, gen = data$gen)
+
   } else {
+
     a = list(trans.prob.fxn(states = founders$states, snps = snps, chr = chr,
         sex = "F"))
+
   } # else
 
   while(p <= maxIter & logLik - lastLogLik > epsilon) {
@@ -56,9 +60,12 @@ hmm.allele = function(data, founders, sex, snps, chr, trans.prob.fxn) {
 
       # Filter
       gen = 1:nrow(data$geno)
-      if(any(names(data) == "gen")) {
+
+      if(any(names(data) == "gen") & attr(data, "sampletype") != "CC") {
+
         print(paste("gen", names(a)[i]))
         gen = which(data$gen == names(a)[i])
+
       } # if(any(names(data) == "gen"))
 
       res = .C(C_filter_smooth_allele,

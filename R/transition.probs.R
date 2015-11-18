@@ -376,11 +376,14 @@ cc.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
     curr.snps = which(snps[,2] == chr)
     retval = array(0, c(length(states), length(states), length(curr.snps) - 1), dimnames = 
              list(states, states, snps[curr.snps[-1], 1]))
-    r = diff(snps[curr.snps, 4])
+
+    r = diff(snps[curr.snps, 4]) * 1e-8
     r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
+
     for(s in 1:(length(curr.snps)-1)) {
-      retval[,,s] = r[s] / (2 + 12 * r[s])
-      diag(retval[,,s]) = (1 - r) / (8 + 48 * r[s])
+      retval[,,s] = r[s] / (2 * (1 + 6 * r[s]))
+      diag(retval[,,s]) = (1 - r[s]) / (8 * (1 + 6 * r[s]))
+      retval[,,s] = retval[,,s] / rowSums(retval[,,s])
     } # for(s)
 
   } else if(chr == "X") {
@@ -389,11 +392,15 @@ cc.trans.probs = function(states, snps, chr = c(1:19, "X"), sex = c("M", "F")) {
     curr.snps = which(snps[,2] == chr)
     retval = array(0, c(length(states), length(states), length(curr.snps) - 1), dimnames = 
              list(states, states, snps[curr.snps[-1], 1]))
-    r = diff(snps[curr.snps, 4])
+
+    r = diff(snps[curr.snps, 4]) * 1e-8
     r[r == 0] = 1e-8  # We can't have zero values here, so set them very small.
+
+    # Table 4 from Broman, Genetics, 2005.
     for(s in 1:(length(curr.snps)-1)) {
-      retval[,,s] = r[s] / (2 + 12 * r[s])
-      diag(retval[,,s]) = (1 - r) / (8 + 48 * r[s])
+      retval[,,s] = r[s] / (6 * (1 + 4 * r[s]))
+      diag(retval[,,s]) = (1 - r[s]) / (6 * (1 + 4 * r[s]))
+      retval[,,s] = retval[,,s] / rowSums(retval[,,s])
     } # for(s)
 
   } else {
@@ -580,11 +587,13 @@ maleX.trans.probs = function(recprob) {
 #        contains values between 1:9 indicating which type of transition occurs
 #        in each cell.
 assign.autosome.femaleX.cases <- function(states) {
+
   # Assign transition case IDs to each cell in the transition probability matrix.
   # Copied from Karl's DOstep.c functions.
   spl = matrix(unlist(strsplit(states, split = "")), nrow = 2)
   founders = sort(unique(as.vector(spl)))
   cases = matrix(0, length(states), length(states))
+
   for(i in 1:length(states)) {
     for(j in 1:length(states)) {
       if(spl[1,i] == spl[2,i]) { 
