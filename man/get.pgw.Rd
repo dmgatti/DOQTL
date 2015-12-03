@@ -4,7 +4,7 @@
   Get the genome wide p-value.
 }
 \description{
-  Given a set of permutations and a LOD or -log10(p-value), return the adjusted genom-wide p-value. This requires autosomal and X chromosome permutation values as provided by \link{\code{scanone.perm}}.
+  Given a set of permutations and a LOD or -log10(p-value), return the adjusted genome-wide p-value. This requires autosomal and X chromosome permutation values as provided by \code{\link{scanone.perm}}.
 If you are using p-values, make sure to convert both the permutations and the p-values to -log10(-p-value).
 }
 \usage{
