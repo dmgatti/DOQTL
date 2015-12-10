@@ -10,9 +10,9 @@
 #            pos: a positive value that is the SNP location in bp of Mb.
 #            snp: The strain pattern of the SNP as 0s and 1s. Must be a named
 #                 vector with the strain names.
-#            probs: 3D array containing the haplotype probabilities.
 #            markers: The location of the markers in probs.
-get.genotype = function(chr, pos, snp, probs) {
+#            probs: 3D array containing the haplotype probabilities.
+get.genotype = function(chr, pos, snp, markers, probs) {
 
   # See if the position is in bp or Mb.
   if(pos < 200) {
