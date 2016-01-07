@@ -273,6 +273,25 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       snps = snps[!is.na(snps[,4]) | snps[,2] == "Y",]
       snps = snps[,1:4]
 
+    } else if (array == "gigamuga") {
+
+      snps = snps[grep("^(B6|JAX|ICR|UNC|Xi)", snps[,1]),]
+
+      # Make sure that the marker positions always increase.
+      for(i in 2:nrow(snps)) {
+        if(snps[i-1,2] == snps[i,2]) {  
+          if(snps[i,3] <= snps[i-1,3]) {
+            snps[i,3] = snps[i-1,3] + 0.001
+          } # if(snps[i,3] <= snps[i-1,3])
+        } # if(snps[i-1,2] == snps[i,2])
+      } # for(i)
+
+    } else {
+
+      stop(paste("calc.genoprob: Unsupported array platform:", array))
+
+    } # else
+
       ### Allele Call ###
       if(method == "allele") {
 
@@ -353,15 +372,9 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
                       states = states, direction = founders$direction)
       attr(founders, "method") = method
 
-    } else {
-
-      stop(paste("calc.genoprob: Unsupported array platform:", array))
-
-    } # else
   } else if(sampletype == "HS") {
 
     # In this case, we require the user to supply founders and markers.
-
 
   } else {
 ###############################
