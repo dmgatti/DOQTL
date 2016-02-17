@@ -1,5 +1,5 @@
 ################################################################################
-# Impute the genoprobs of a matrix from one set of markers to another.
+# Interpolate the genoprobs of a matrix from one set of markers to another.
 # Daniel Gatti
 # Dan.Gatti@jax.org
 # Dec. 20, 2014
@@ -11,7 +11,7 @@
 #                  impute from. Must match the marker names in data.
 #            to:  marker information (names, chr, pos) for the markers to 
 #                 impute to. May be higher or lower density than from.
-impute.markers = function(data, from, to) {
+interpolate.markers = function(data, from, to) {
 
   # Verify that the number of row in data and from matches.
   if(nrow(data) != nrow(from)) {
@@ -100,7 +100,5 @@ impute.markers = function(data, from, to) {
 
   newdata
 
-} # impute.markers()
-
-
+} # interpolate.markers()
 
