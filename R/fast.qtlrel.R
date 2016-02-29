@@ -18,28 +18,19 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     snps[,3] = snps[,3] * 1e-6
   } # if(max(snps[,3]) < 200)
 
-  prdat = list(pr = probs, chr = snps[,2], dist = snps[,3], snp = snps[,1])
-  class(prdat) = c(class(prdat), "addEff")
   err.cov = NULL
 
   if(!missing(K)) {
 
     K = as.matrix(K)
-    vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
-                EE = diag(nrow(K)))
-    vc = NULL
+    mod = NULL
     if(missing(addcovar)) {
-      vc = estVC(y = pheno, v = vTmp)
+      mod = regress(pheno ~ 1, ~K, pos = c(TRUE, TRUE))
     } else {
-      vc = estVC(y = pheno, x = addcovar, v = vTmp)
+      mod = regress(pheno ~ addcovar, ~K, pos = c(TRUE, TRUE))
     } # else
 
-    err.cov = matrix(0, nrow(K), ncol(K))
-    for(j in which(vc$nnl)) {
-      err.cov = err.cov + vTmp[[j]] * vc$par[names(vTmp)[j]]
-    } # for(j)
-
-    rm(vTmp)
+    err.cov = mod$sigma[1] * K + mod$sigma[2] * diag(length(pheno))
 
     # Invert the covariance matrix.
     eW = eigen(err.cov, symmetric = TRUE)
@@ -62,7 +53,7 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     colnames(addcovar)[1] = "Intercept"
   } # else
 
-  # Remove A as the basis.
+  # Remove strain A as the basis.
   probs = probs[,-1,]
 
   # Null model.
