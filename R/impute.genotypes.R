@@ -17,11 +17,8 @@
 # hq: Boolean indicating whether to use only high quality SNPs. Default = TRUE.
 # cross: Character string that is the cross type. One of "DO", "CC", "DOF1", 
 #        "HS", "HSrat", "other")
-# outfile: Character string containing the path and filename to write out to.
-#          Should end with "rds".
 impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE, 
-                   cross = c("DO", "CC", "DOF1", "HS", "HSrat", "other"),
-                   filename = "imputed_snps.rds") {
+                   cross = c("DO", "CC", "DOF1", "HS", "HSrat", "other")) {
 
   if(dim(probs)[3] != nrow(markers)) {
     print(paste0("The dim(probs)[3] (", dim(probs)[3], "must equal nrow(markers) (",
@@ -106,10 +103,6 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   mat = split(mat, brks2)
   rm(brks, brks2)
   mat = lapply(mat, matrix, nrow = nr)
-  
-  outfile = file(description = filename, open = "w")
-  writeLines(text = paste("SNP", paste(rownames(probs), sep = " "), sep = " "),
-             con = outfile)
 
   locs = sapply(mat, ncol)
   snps = matrix(0, nrow = sum(locs), ncol = nrow(probs), dimnames =
@@ -139,16 +132,6 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   snps[rng,] = t(s)
   rownames(snps)[rng] = pos[[i]]
 
-  print(paste("Writing out file:", filename))
-  outfile = file(description = filename, open = "w")
-  saveRDS(snps, file = outfile)
-  flush(con = outfile)
-  close(con = outfile)
-  
-  print(showConnections(all = TRUE))
-
-  # We need this or else R returns the file from the saveRDS() function
-  # and keeps the connection open.
-  return()
+  return(snps)
   
 } # impute.genotypes()

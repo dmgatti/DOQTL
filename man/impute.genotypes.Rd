@@ -8,8 +8,7 @@
 }
 \usage{
   impute.genotypes(gr, probs, markers, vcf.file, hq = TRUE, 
-  cross = c("DO", "CC", "DOF1", "HS", "HSrat", "other"),
-  filename = "imputed_snps.rds")
+  cross = c("DO", "CC", "DOF1", "HS", "HSrat", "other"))
 }
 \arguments{
   \item{gr}{
@@ -30,9 +29,6 @@
   \item{cross}{
     Character string that is the cross type. One of "DO", "CC", "DOF1", "HS", "HSrat", "other")
   }
-  \item{outfile}{
-    Character string containing the path and filename to write out to. Should end with "rds".
-  }
 }
 \details{
   This function takes the mean of the haplotype probabilities between two markers and does not linearly interpolate between markers.
@@ -46,6 +42,6 @@
 \examples{
   \dontrun{
     impute.genotypes(gr, probs, markers, vcf.file, hq = TRUE, 
-    cross = "DO", filename = "imputed_snps.rds")
+    cross = "DO")
   }
 }
