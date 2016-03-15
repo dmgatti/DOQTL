@@ -18,10 +18,10 @@
 # cross: Character string that is the cross type. One of "DO", "CC", "DOF1", 
 #        "HS", "HSrat", "other")
 # outfile: Character string containing the path and filename to write out to.
-#          Should end with "Rdata".
-impute.genotypes = function(gr, probs, vcf.file, hq = TRUE, 
+#          Should end with "rds".
+impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE, 
                    cross = c("DO", "CC", "DOF1", "HS", "HSrat", "other"),
-                   filename = "imputed_snps.Rdata") {
+                   filename = "imputed_snps.rds") {
 
   if(dim(probs)[3] != nrow(markers)) {
     print(paste0("The dim(probs)[3] (", dim(probs)[3], "must equal nrow(markers) (",
