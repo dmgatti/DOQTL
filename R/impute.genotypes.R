@@ -95,6 +95,8 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   markers = markers[c(wh[1] - 1, wh, wh[length(wh)] + 1),]
   probs = probs[,,markers[,1]]
 
+  # Make breakpoints between markers and get the unique SDPs between each 
+  # pair of markers.
   brks = cut(pos, markers[,3])
   pos = paste(markers[1,2], pos, sep = "_")
   pos = split(pos, brks)
@@ -109,7 +111,9 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
          list(1:sum(locs), rownames(probs)))
   locs = c(0, cumsum(locs))
 
-  for(i in 1:(length(mat)-1)) {
+  mat.gt.0 = which(sapply(mat, length) > 0)
+
+  for(i in mat.gt.0[1:(length(mat.gt.0)-1)]) {
 
     pr = apply(probs[,,i:(i+1)], 1:2, mean, na.rm = TRUE)
     s = round(2 * pr %*% mat[[i]])
@@ -122,7 +126,7 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
 
   } # for(i)
 
-  i = length(mat)
+  i = length(mat.gt.0)
   pr = probs[,,i]
   s = round(2 * pr %*% mat[[i]])
     
