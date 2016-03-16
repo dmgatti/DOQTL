@@ -105,8 +105,9 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   mat = split(mat, brks2)
   rm(brks, brks2)
   mat = lapply(mat, matrix, nrow = nr)
+  mat = lapply(mat, t)
 
-  locs = sapply(mat, ncol)
+  locs = sapply(mat, nrow)
   snps = matrix(0, nrow = sum(locs), ncol = nrow(probs), dimnames =
          list(1:sum(locs), rownames(probs)))
   locs = c(0, cumsum(locs))
@@ -115,26 +116,27 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
 
   for(i in mat.gt.0[1:(length(mat.gt.0)-1)]) {
 
-    pr = apply(probs[,,i:(i+1)], 1:2, mean, na.rm = TRUE)
-    s = round(2 * pr %*% mat[[i]])
-    
-    stopifnot(range(s) == c(0,2))
-    
+    print(i)
+
+    # The range of rows in snps to populate.
     rng = (locs[i] + 1):locs[i+1]
-    snps[rng,] = t(s)
-    rownames(snps)[rng] = pos[[i]]
+
+    # We sum the probs at the two surrounding markers,
+    # but we DON'T divide by 2 because we want homozygotes
+    # to be 0 or 2 and hets to be 1.
+    pr = probs[,,i] + probs[,,(i+1)]
+    snps[rng,] = round(tcrossprod(mat[[i]], pr))
+    rownames(snps)[rng] = pos[[i]]    
+    stopifnot(range(snps[rng,]) == c(0,2))
 
   } # for(i)
 
   i = mat.gt.0[length(mat.gt.0)]
-  pr = probs[,,i]
-  s = round(2 * pr %*% mat[[i]])
-    
-  stopifnot(range(s) == c(0,2))
-    
   rng = (locs[i] + 1):locs[i+1]
-  snps[rng,] = t(s)
+  pr = 2 * probs[,,i]
+  snps[rng,] = round(tcrossprod(mat[[i]], pr))
   rownames(snps)[rng] = pos[[i]]
+  stopifnot(range(s) == c(0,2))
 
   return(snps)
   
