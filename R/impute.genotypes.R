@@ -126,8 +126,7 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
     # to be 0 or 2 and hets to be 1.
     pr = probs[,,i] + probs[,,(i+1)]
     snps[rng,] = round(tcrossprod(mat[[i]], pr))
-    rownames(snps)[rng] = pos[[i]]    
-    stopifnot(range(snps[rng,]) == c(0,2))
+    rownames(snps)[rng] = pos[[i]]
 
   } # for(i)
 
@@ -136,7 +135,7 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   pr = 2 * probs[,,i]
   snps[rng,] = round(tcrossprod(mat[[i]], pr))
   rownames(snps)[rng] = pos[[i]]
-  stopifnot(range(s) == c(0,2))
+  stopifnot(range(snps) == c(0,2))
 
   return(snps)
   
