@@ -33,6 +33,7 @@ scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, intcovar, markers
   registerDoParallel(cl)
 
   # Synch up markers and haplotype probs.
+  markers = markers[!is.na(markers[,3]),]
   markers = markers[markers[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
 
