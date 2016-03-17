@@ -58,84 +58,89 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
           geno = c("GT", "FI"), which = gr)
   sanger = readVcf(file = vcf.file, genome = "mm10", param = param)
 
-  # Keep only high quality SNPs if requested.
-  if(hq) {
-    sanger = sanger[rowRanges(sanger)$FILTER == "PASS",]
-  } # if(hq)
+  snps = NULL
+  if(nrow(sanger) > 0) {
 
-  mat = genotypeToSnpMatrix(sanger)
-  mat = matrix(as.numeric(mat$genotypes), nrow = nrow(mat$genotypes), 
-        ncol = ncol(mat$genotypes), dimnames = dimnames(mat$genotypes))
+    # Keep only high quality SNPs if requested.
+    if(hq) {
+      sanger = sanger[rowRanges(sanger)$FILTER == "PASS",]
+    } # if(hq)
 
-  # Add C57BL/6J to the SNP matrix.
-  if(cross == "DO" | cross == "CC") {
-    mat = rbind(mat[1,,drop = FALSE], C57BL_6J = rep(1, ncol(mat)), mat[2:7,])
-  } # if(cross = "DO" | cross == "CC")
-  pos = start(sanger)
-  rm(sanger)
+    mat = genotypeToSnpMatrix(sanger)
+    mat = matrix(as.numeric(mat$genotypes), nrow = nrow(mat$genotypes), 
+          ncol = ncol(mat$genotypes), dimnames = dimnames(mat$genotypes))
 
-  # Keep only polymorphic SNPs.
-  keep = which(colSums(mat == 1) < nrow(mat))
-  mat = mat[,keep]
-  pos = pos[keep]
+    # Add C57BL/6J to the SNP matrix.
+    if(cross == "DO" | cross == "CC") {
+      mat = rbind(mat[1,,drop = FALSE], C57BL_6J = rep(1, ncol(mat)), mat[2:7,])
+    } # if(cross = "DO" | cross == "CC")
+    pos = start(sanger)
+    rm(sanger)
 
-  # Keep only bimorphic SNPs.
-  x = sapply(apply(mat, 2, unique), length)
-  keep = which(x == 2)
-  mat = mat[,keep]
-  pos = pos[keep]
-  rm(x)
+    # Keep only polymorphic SNPs.
+    keep = which(colSums(mat == 1) < nrow(mat))
+    mat = mat[,keep]
+    pos = pos[keep]
 
-  # Convert SNPs to 0s and 1s.
-  mat = (mat != 1) * 1
+    # Keep only bimorphic SNPs.
+    x = sapply(apply(mat, 2, unique), length)
+    keep = which(x == 2)
+    mat = mat[,keep]
+    pos = pos[keep]
+    rm(x)
 
-  # Impute the SNPs.
-  wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & markers[,3] >= start(gr) & 
-       markers[,3] <= end(gr))
-  markers = markers[c(wh[1] - 1, wh, wh[length(wh)] + 1),]
-  probs = probs[,,markers[,1]]
+    # Convert SNPs to 0s and 1s.
+    mat = (mat != 1) * 1
 
-  # Make breakpoints between markers and get the unique SDPs between each 
-  # pair of markers.
-  brks = cut(pos, markers[,3])
-  pos = paste(markers[1,2], pos, sep = "_")
-  pos = split(pos, brks)
-  nr = nrow(mat)
-  brks2 = rep(brks, each = 8)
-  mat = split(mat, brks2)
-  rm(brks, brks2)
-  mat = lapply(mat, matrix, nrow = nr)
-  mat = lapply(mat, t)
+    # Impute the SNPs.
+    wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & markers[,3] >= start(gr) & 
+         markers[,3] <= end(gr))
+    markers = markers[c(wh[1] - 1, wh, wh[length(wh)] + 1),]
+    probs = probs[,,markers[,1]]
 
-  locs = sapply(mat, nrow)
-  snps = matrix(0, nrow = sum(locs), ncol = nrow(probs), dimnames =
-         list(1:sum(locs), rownames(probs)))
-  locs = c(0, cumsum(locs))
+    # Make breakpoints between markers and get the unique SDPs between each 
+    # pair of markers.
+    brks = cut(pos, markers[,3])
+    pos = paste(markers[1,2], pos, sep = "_")
+    pos = split(pos, brks)
+    nr = nrow(mat)
+    brks2 = rep(brks, each = 8)
+    mat = split(mat, brks2)
+    rm(brks, brks2)
+    mat = lapply(mat, matrix, nrow = nr)
+    mat = lapply(mat, t)
 
-  mat.gt.0 = which(sapply(mat, length) > 0)
+    locs = sapply(mat, nrow)
+    snps = matrix(0, nrow = sum(locs), ncol = nrow(probs), dimnames =
+           list(1:sum(locs), rownames(probs)))
+    locs = c(0, cumsum(locs))
 
-  for(i in mat.gt.0[1:(length(mat.gt.0)-1)]) {
+    mat.gt.0 = which(sapply(mat, length) > 0)
 
-    print(i)
+    for(i in mat.gt.0[1:(length(mat.gt.0)-1)]) {
 
-    # The range of rows in snps to populate.
+      print(i)
+
+      # The range of rows in snps to populate.
+      rng = (locs[i] + 1):locs[i+1]
+
+      # We sum the probs at the two surrounding markers,
+      # but we DON'T divide by 2 because we want homozygotes
+      # to be 0 or 2 and hets to be 1.
+      pr = probs[,,i] + probs[,,(i+1)]
+      snps[rng,] = round(tcrossprod(mat[[i]], pr))
+      rownames(snps)[rng] = pos[[i]]
+
+    } # for(i)
+
+    i = mat.gt.0[length(mat.gt.0)]
     rng = (locs[i] + 1):locs[i+1]
-
-    # We sum the probs at the two surrounding markers,
-    # but we DON'T divide by 2 because we want homozygotes
-    # to be 0 or 2 and hets to be 1.
-    pr = probs[,,i] + probs[,,(i+1)]
+    pr = 2 * probs[,,i]
     snps[rng,] = round(tcrossprod(mat[[i]], pr))
     rownames(snps)[rng] = pos[[i]]
+    stopifnot(range(snps) == c(0,2))
 
-  } # for(i)
-
-  i = mat.gt.0[length(mat.gt.0)]
-  rng = (locs[i] + 1):locs[i+1]
-  pr = 2 * probs[,,i]
-  snps[rng,] = round(tcrossprod(mat[[i]], pr))
-  rownames(snps)[rng] = pos[[i]]
-  stopifnot(range(snps) == c(0,2))
+  } # if(nrow(sanger) > 0)
 
   return(snps)
   
