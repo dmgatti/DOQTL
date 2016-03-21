@@ -107,7 +107,8 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
     # Impute the SNPs.
     wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & 
          markers[,3] >= start(gr) & markers[,3] <= end(gr))
-    markers = markers[c(wh[1] - 1, wh, wh[length(wh)] + 1),]
+    wh = unique(c(max(1, wh[1] - 1), wh, min(wh[length(wh)] + 1, nrow(markers))))
+    markers = markers[wh,]
     probs = probs[,,markers[,1]]
 
     # Make breakpoints between markers and get the unique SDPs between each 
