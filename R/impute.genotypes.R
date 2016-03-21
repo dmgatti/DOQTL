@@ -29,6 +29,18 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
     print(paste0("The dimnames(probs)[[3]] must equal nrow(markers)."))
   } # if(any(dimnames(probs)[[3]] != markers[,1]))
 
+  # Synch up the marker locations.
+  probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
+  markers = markers[markers[,1] %in% dimnames(probs)[[3]],]
+  stopifnot(markers[,1] == dimnames(probs)[[3]])
+
+  # Some of the MUGA series markers occur at the same position.
+  # Keep only unique ones.
+  unique.markers = which(!duplicated(markers[,3]))
+  markers = markers[unique.markers,]
+  probs = probs[,,unique.markers]
+  rm(unique.markers)
+
   # Check the GRanges ranges to see if they're in bp or Mb. We need to change 
   # them to bp for scan VCF to work.
   if(max(start(gr), end(gr)) < 200) {
@@ -93,8 +105,8 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
     mat = (mat != 1) * 1
 
     # Impute the SNPs.
-    wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & markers[,3] >= start(gr) & 
-         markers[,3] <= end(gr))
+    wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & 
+         markers[,3] >= start(gr) & markers[,3] <= end(gr))
     markers = markers[c(wh[1] - 1, wh, wh[length(wh)] + 1),]
     probs = probs[,,markers[,1]]
 
