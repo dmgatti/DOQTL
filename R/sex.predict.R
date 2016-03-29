@@ -35,9 +35,9 @@ sex.predict = function(x, y, snps, plot = FALSE) {
   snps = snps[match(colnames(x), snps[,1]),]
 
   # Keep the X and Y chromosome data.
-  x.rng = which(snps[,2] == "X")
+  x.rng = which(snps[,2] == "X", na.rm = TRUE)
   x.int = rowMeans(x[,x.rng] + y[,x.rng], na.rm = TRUE)
-  y.rng = which(snps[,2] == "Y")
+  y.rng = which(snps[,2] == "Y", na.rm = TRUE)
   y.int = rowMeans(x[,y.rng] + y[,y.rng], na.rm = TRUE)
   keep = which(!(is.na(x.int) & is.na(y.int)))
 
