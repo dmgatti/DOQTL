@@ -105,8 +105,10 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
     mat = (mat != 1) * 1
 
     # Impute the SNPs.
-    wh = which(as.character(markers[,2]) == as.character(seqnames(gr)) & 
-         markers[,3] >= start(gr) & markers[,3] <= end(gr))
+    wh = which(as.character(markers[,2]) == as.character(seqnames(gr)))
+    markers = markers[wh,]
+    probs = probs[,,markers[,1]]
+    wh = which(markers[,3] >= start(gr) & markers[,3] <= end(gr))
     wh = unique(c(max(1, wh[1] - 1), wh, min(wh[length(wh)] + 1, nrow(markers))))
     markers = markers[wh,]
     probs = probs[,,markers[,1]]
