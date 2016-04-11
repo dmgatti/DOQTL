@@ -10,7 +10,7 @@
   Additive condenses the heterozygous genotype calls down to the founder allele contributions. Dominance will eventually provide additive and dominance values (method currently uncertain). FALSEull simply gathers all of the genotype probabilities together. 
 }
 \usage{
-  condense.model.probs(path = ".", write, model = c("additive", "dominance", "full"))
+  condense.model.probs(path = ".", write, model = c("additive", "dominance", "full"), cross = "DO")
   get.additive(files, samples)
   get.dominance(files, samples)
   get.full(files, samples)
@@ -24,6 +24,9 @@
   }
   \item{model}{
     Character string that is one of "additive", "dominance" or "full". See details.
+  }
+  \item{cross}{
+    Character string containing the type of cross. Typically "DO, "CC", "HS" or "DOF1". This is used in downsteam analyses to produce the coefficient plots and select strains for association mapping.
   }
   \item{files}{
     Vector of files to read.

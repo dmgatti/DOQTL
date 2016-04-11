@@ -474,6 +474,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 
      # Verify that the allele calls are the same in the data and
      # founders.
+     data$geno[data$geno == "-"] = "N"
      check.alleles(data = data, founders = founders)
 
      # Convert the sample names into names that can be written out 

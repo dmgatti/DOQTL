@@ -7,11 +7,14 @@
   This is used to convert the *.txt genotype probability files to *.Rdata files.
 }
 \usage{
-  create.Rdata.files(prob.files)
+  create.Rdata.files(prob.files, cross = "DO")
 }
 \arguments{
   \item{prob.files}{
     Character vector containing genotype probability file names.
+  }
+  \item{cross}{
+    Character string containing the type of cross. Typically "DO, "CC, "HS", or "DOF1".
   }
 }
 \value{

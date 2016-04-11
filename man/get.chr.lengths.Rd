@@ -7,7 +7,7 @@
   Using the org.Mm.eg.db package, get the chromosome lengths.
 }
 \usage{
-  get.chr.lengths()
+  get.chr.lengths(genome = "mm10")
 }
 \details{
   Keeps only the lengths of the chromosomes, not random or unmapped.

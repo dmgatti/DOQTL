@@ -4,7 +4,7 @@
   Get the genotype with the highest probability
 }
 \description{
-  FALSEor each sample at each marker, return the genotype state with the highest probability.
+  For each sample at each marker, return the genotype state with the highest probability.
 }
 \usage{
   get.max.geno(probs)

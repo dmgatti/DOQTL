@@ -2,18 +2,21 @@
 \alias{read.vcf}
 \alias{get.vcf.strains}
 \title{
-  Read and parse VCFALSE data
+  Read and parse VCF data
 }
 \description{
-  *** CURRENTLY UNDER CONSTRUCTION ***. This function is designed to read in the Sanger VCFALSE files for SNPs, Indels and structural variants. 
+  *** CURRENTLY UNDER CONSTRUCTION ***. This function is designed to read in the Sanger VCF files for SNPs, Indels and structural variants. 
 }
 \usage{
-  read.vcf(vcf.file, chr = 1, start = 4, end = 4.5, strains,
+  read.vcf(vcf.file, gr, chr = 1, start = 4, end = 4.5, strains,
            return.val = c("allele", "number"), return.qual = TRUE, csq = FALSE)
 }
 \arguments{
   \item{vcf.file}{
-    Character string containing full path to a Sanger SNP, Indel or structural variant VCFALSE file.
+    Character string containing full path to a Sanger SNP, Indel or structural variant VCF file.
+  }
+  \item{gr}{
+    GRanges object containing one or more ranges to query. Use either this argument or the chr, start and end arguments, but not both.
   }
   \item{chr}{
     Character or numeric vector containing mouse chromosome IDs to query.
@@ -25,7 +28,7 @@
     Numeric vector containing the end position on each chromosome to query. Must be the same length as chr. If the value is less than 200, it is assumed to be in Mb. Values greater than 200 are assumed to be in bp.
   }
   \item{strains}{
-    Character vector containing strain names, as listed in the vcf.file, to retrieve. If missing, then all strains are returned. Use \code{\link{get.vcf.strains}} to get the strain names from the VCFALSE file.
+    Character vector containing strain names, as listed in the vcf.file, to retrieve. If missing, then all strains are returned. Use \code{\link{get.vcf.strains}} to get the strain names from the VCF file.
   }
   \item{return.val}{
     Character string that is either "allele", which returns the nucleotide allele calls, or "number", which returns numeric values.
@@ -38,7 +41,7 @@
   }
 }
 \details{
-  There is a very nice package called vcf2geno, but it is designed to work with the 1000 Genomes VCFALSE format. The Sanger format is slightly different, hence the need for this function. FALSEuture plans include the addition of variant consequence selection.
+  There is a very nice package called vcf2geno, but it is designed to work with the 1000 Genomes VCF format. The Sanger format is slightly different, hence the need for this function. Future plans include the addition of variant consequence selection.
   The Sanger variant files have 'snp', 'indel' or 'SV' in them and we use this to determine the type of file being processed.
 }
 \value{
@@ -91,10 +94,15 @@
   !!! This function is still under development !!!
 }
 \examples{
-  \dontrun{ read.vcf(vcf.file = 
-  "ftp://ftp-mouse.sanger.ac.uk/current_snps/mgp.v3.snps.rsIDdbSNPv137.vcf.gz",
-  chr = 1, start = 5, end = 5.5) }
+  \dontrun{ 
+    read.vcf(vcf.file = 
+    "ftp://ftp-mouse.sanger.ac.uk/current_snps/mgp.v3.snps.rsIDdbSNPv137.vcf.gz",
+    chr = 1, start = 5, end = 5.5)
+    read.vcf(vcf.file = 
+    "ftp://ftp-mouse.sanger.ac.uk/current_snps/mgp.v3.snps.rsIDdbSNPv137.vcf.gz",
+    gr = GRanges(seqnames = 1, ranges = IRanges(start = 5, end = 5.5)))
+  }
 }
 \keyword{ Sanger }
-\keyword{ VCFALSE }
+\keyword{ VCF }
 \keyword{ variants }

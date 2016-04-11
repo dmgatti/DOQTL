@@ -51,7 +51,7 @@ void kinship(int* dims, double* probs, double* K) {
       sum = 0.0;
       for(f1 = 0; f1 < num_founders; f1++) {
         pr_mat_sam_index1 = pr_mat_snp_index + f1 * num_samples + sam1;
-	    sum += probs[pr_mat_sam_index1] * probs[pr_mat_sam_index1];
+	     sum += probs[pr_mat_sam_index1] * probs[pr_mat_sam_index1];
       } /* for(f1) */
 	  mags[snp * num_samples + sam1] = sqrt(sum);
 	} /* for(sam) */
@@ -75,7 +75,7 @@ void kinship(int* dims, double* probs, double* K) {
           pr_mat_sam_index2 = pr_mat_snp_index + f1 * num_samples + sam2;
           numer_sum += probs[pr_mat_sam_index1] * probs[pr_mat_sam_index2];
         } /* for(f1) */
-		/* Divide the dot product by the product of the magnitudes. */
+		  /* Divide the dot product by the product of the magnitudes. */
         K[sam1 * num_samples + sam2] += numer_sum / mags[snp * num_samples + sam1] / 
 		                                mags[snp * num_samples + sam2];
       } /* for(sam2) */

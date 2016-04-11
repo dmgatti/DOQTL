@@ -5,7 +5,7 @@
   Retrieve the MGI features within a genomic region.  FALSEeatures include genes, gene models, non-coding RNA, etc., but not SNPs.  This allows the user to filter by source and type of feature.
 }
 \usage{
-  get.mgi.features(file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20130703.sorted.txt.gz", 
+  get.mgi.features(file = "ftp://ftp.jax.org/SNPtools/genes/MGI.20140803.sorted.txt", 
   chr = NULL, start = NULL, end = NULL, source = c("all", "MGI", "VEGA", "ENSEMBL", 
   "Blat", "NCBI_Gene"), type = c("all", "gene", "pseudogenic_transcript", 
   "pseudogenic_exon", "pseudogene", "match", "match-part", "transcript", "exon", 

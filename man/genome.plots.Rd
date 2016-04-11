@@ -9,8 +9,8 @@
   This function plots the genotype of a DO sample by taking the genotype with the maximum probability at each marker.
 }
 \usage{
-  \method{plot}{genoprobs}(x, snps, colors = "mm10", chrlen = "mm10", ...)
-  chr.skeletons(chr, genome = "mm10", ...)
+  \method{plot}{genoprobs}(x, snps, colors = "DO", chrlen = "mm10", ...)
+  chr.skeletons(chr, chrlen, ...)
   genomic.points(chr = NULL, loc = NULL)
   write.genoprob.plots(path = ".", snps)
 }

@@ -17,8 +17,6 @@ write.founder.genomes = function(filenames = dir(path = ".",
 
     load(filenames[1])
     snps = snps[snps[,1] %in% dimnames(prsmth)[[1]],]
-    
-    chrlen = get.chr.lengths()
 
     for(i in 1:length(filenames)) {
 
@@ -30,7 +28,7 @@ write.founder.genomes = function(filenames = dir(path = ".",
       # Get the maximum genotype at each SNP.
       max.geno = colnames(prsmth)[apply(prsmth, 1, which.max)]
 
-      # Split the genotypes up by chormosome.
+      # Split the genotypes up by chromosome.
       max.geno = split(max.geno, snps[,2])
       max.geno = max.geno[c(1, 12:19, 2:11, 20)]
 
@@ -93,4 +91,137 @@ write.founder.genomes = function(filenames = dir(path = ".",
                 row.names = FALSE, quote = FALSE)
     } # for(i)
   } # if(length(filenames) > 0)
+
 } # write.founder.genomes()
+
+
+write.founder.genomes.from.haps = function(probs, snps) {
+
+  probs = probs[,,dimnames(probs)[[3]] %in% snps[,1]]
+  snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
+    
+  chrs = unique(snps[,2])
+  chrlen = get.chr.lengths()
+
+  for(i in 1:nrow(probs)) {
+
+    print(paste0("Processing sample ", rownames(probs)[i], ". ", i, " of ", 
+          nrow(probs), "."))
+
+    # Round the probs to 0, 1 or 2 (although 3 creeps in sometimes...).
+    pr = t(round(2 * probs[i,,]))
+
+    # Fix loci with more than 2 haplotype probs by keeping the top 2.
+    if(any(abs(rowSums(pr) - 2.0) > 1e-8)) {
+
+      wh = which(abs(rowSums(pr) - 2.0) > 1e-8)
+
+      for(j in wh) {
+        tmp = sort(probs[i,,j])
+        tmp = tmp[cumsum(tmp) > 0.49]
+        pr[j,] = 0
+        if(length(tmp) == 2) {
+          pr[j,names(tmp)] = 1
+        } else if(length(tmp) > 2) {
+          tmp = tmp[2:3]
+          pr[j,names(tmp)] = 1
+        } else {
+          pr[j,names(tmp)] = 2
+        } # else
+      } # for(j)
+
+    } # if(any(abs(rowSums(pr) - 2.0) > 1e-8))
+
+    stopifnot(all(abs(rowSums(pr) - 2.0) < 1e-8))
+
+    outfile1 = paste(make.names(rownames(probs)[i]), 
+                     ".founder.blocks.A.csv", sep = "")
+    outfile2 = paste(make.names(rownames(probs)[i]),
+                     ".founder.blocks.B.csv", sep = "")
+    outfile1 = file(outfile1, "w")
+    outfile2 = file(outfile2, "w")
+
+    writeLines(text = "Chr,End,1", con = outfile1, sep = "\n")
+    writeLines(text = "Chr,End,2", con = outfile2, sep = "\n")
+
+    for(chr in chrs) {
+
+      # Get the SNP range for the current chromosome.
+      rng = which(snps[,2] == chr)
+      curr.pr = pr[rng,]
+      curr.snps = snps[rng,]
+      curr.snps[,3] = curr.snps[,3] * 1e6
+      # Take the difference between each row.
+      curr.diff = diff(rbind(0, curr.pr))
+      rownames(curr.diff) = rownames(curr.snps)
+      keep = which(rowSums(curr.diff != 0) > 0)
+      curr.diff = curr.diff[keep,]
+      curr.snps = curr.snps[keep,]
+
+      row = 1
+
+      # Write out the start genotype.
+      # > 0 is the start of a block, < 0 is the end of a block.
+      next.gt = which(curr.diff[row,] > 0)[1]
+      writeLines(text = paste(chr, 1, names(next.gt), sep = ","),
+                 con = outfile1, sep = "\n")
+      curr.diff[row, next.gt] = curr.diff[row, next.gt] - 1
+      row = row + 1
+
+      while(row < nrow(curr.diff)) {
+
+        last.gt = next.gt
+        next.gt = which(curr.diff[row,] > 0)[1]
+
+        writeLines(text = paste(chr, curr.snps[row,3], names(next.gt), sep = ","),
+                   con = outfile1, sep = "\n")
+        curr.diff[row, last.gt] = curr.diff[row, last.gt] + 1
+        curr.diff[row, next.gt] = curr.diff[row, next.gt] - 1
+        keep = which(rowSums(curr.diff != 0) > 0)
+        curr.diff = curr.diff[keep,]
+        curr.snps = curr.snps[keep,]
+        row = min(which(curr.diff[row:nrow(curr.diff),next.gt] < 0)) + row - 1
+
+        stopifnot(nrow(curr.diff) == nrow(curr.snps))
+
+      } # while(row < nrow(curr.diff))
+
+      # Handle the last line.
+      if(!is.infinite(row)) {
+        next.gt = which(curr.diff[row,] > 0)[1]
+        last.gt = which(curr.diff[row,] < 0)[1]
+
+        writeLines(text = paste(chr, curr.snps[row,3], names(next.gt), sep = ","),
+                   con = outfile1, sep = "\n")
+        curr.diff[row, last.gt] = curr.diff[row, last.gt] + 1
+        curr.diff[row, next.gt] = curr.diff[row, next.gt] - 1
+        keep = which(rowSums(curr.diff != 0) > 0)
+        curr.diff = curr.diff[keep,,drop = FALSE]
+        curr.snps = curr.snps[keep,,drop = FALSE]
+      } # if(!is.infinite(row))
+
+      # Write out strand 2.
+      row = 1
+      next.gt = which(curr.diff[row,] > 0)[1]
+      writeLines(text = paste(chr, 1, names(next.gt), sep = ","),
+                 con = outfile2, sep = "\n")
+
+      if(nrow(curr.diff) > 1) {
+        for(row in 2:nrow(curr.diff)) {
+
+          next.gt = which(curr.diff[row,] > 0)
+          writeLines(text = paste(chr, curr.snps[row,3], names(next.gt), sep = ","),
+                     con = outfile2, sep = "\n")
+
+        } # for(row)
+      } # if(nrow(curr.diff) > 1)
+
+    } # for(chr)
+
+    close(outfile1)
+    close(outfile2)
+
+  } # for(i)
+
+} # write.founder.genomes.from.haps()
+

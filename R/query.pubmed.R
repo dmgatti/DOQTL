@@ -14,15 +14,18 @@ query.pubmed = function(gene.symbols, keywords) {
   # Convert gene symbols to EntrezGene IDs.
   mouse.entrez = mget(gene.symbols, org.Mm.egSYMBOL2EG, ifnotfound = NA)
   mouse.entrez = lapply(mouse.entrez, function(z) { z[!is.na(z)] })
+  mouse.entrez = unlist(mouse.entrez)
   
   # Get the human orthologs (9606 is the NCBI Homo Sapiens species code).
   message("Getting human orthologs...")
   homol = read.delim(url("ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/homologene.data"))
   human.entrez = lapply(mouse.entrez, getHOMOLOG, targetspecies = "9606", 
                  homol = homol)
+  human.entrez = human.entrez[sapply(human.entrez, length) > 0]
   human.entrez = lapply(human.entrez, function(z) { z[[1]][!is.na(z[[1]])] })
   human.entrez = human.entrez[sapply(human.entrez, length) > 0]
   human.entrez = lapply(human.entrez, as.character)
+  human.entrez = unlist(human.entrez)
   
   # Get the PubMed IDs for this gene.
   mouse.pmid = lapply(mouse.entrez, mget, envir = org.Mm.egPMID, ifnotfound = NA)
@@ -41,25 +44,33 @@ query.pubmed = function(gene.symbols, keywords) {
   names(results) = gene.symbols
   
   for(g in 1:length(gene.symbols)) {
+
     message(gene.symbols[g])
     results[[g]] = vector(mode = "list", length = length(keywords))
     names(results[[g]]) = keywords
     results[[g]] = lapply(results[[g]], as.list)
-    x = pubmed(pmid[[g]])
-    a = xmlRoot(x)
-    num.art = length(xmlChildren(a))
+
+    if(length(pmid[[g]]) > 0) {
+
+      x = pubmed(pmid[[g]])
+      a = xmlRoot(x)
+      num.art = length(xmlChildren(a))
  
-    art.list = vector("list", length = num.art)
-    for(i in 1:num.art) {
-      art.list[[i]] = buildPubMedAbst(a[[i]])
-      found = sapply(keywords, grep, x = abstText(art.list[[i]]))
-      found = which(sapply(found, length) > 0)
-      if(length(found) > 0) {
-        for(k in 1:length(found)) {
-          results[[g]][[found[k]]] = c(results[[g]][[found[k]]], art.list[[i]])
-        } # for(k)
-      } # if(length(found) > 0)
-    } # for(i)
+      art.list = vector("list", length = num.art)
+      for(i in 1:num.art) {
+
+        art.list[[i]] = buildPubMedAbst(a[[i]])
+        found = sapply(keywords, grep, x = abstText(art.list[[i]]))
+        found = which(sapply(found, length) > 0)
+        if(length(found) > 0) {
+          for(k in 1:length(found)) {
+            results[[g]][[found[k]]] = c(results[[g]][[found[k]]], art.list[[i]])
+          } # for(k)
+        } # if(length(found) > 0)
+
+      } # for(i)
+    } # if(length(pmid[[g]]) > 0)
+
   } # for(g)
   
   return(results)

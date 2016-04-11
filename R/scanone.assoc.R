@@ -27,17 +27,18 @@
 # Contains scanone.assoc, s1.assoc, plot.scanone.assoc
 ################################################################################
 scanone.assoc = function(pheno, pheno.col, probs, K, addcovar, intcovar, markers,
-                cross = c("DO", "CC", "HS"), sdp.file, ncl = 1) {
+                cross = c("DO", "CC", "HS"), sdp.file, ncl) {
 
   cl = makeCluster(ncl)
   registerDoParallel(cl)
 
   # Synch up markers and haplotype probs.
+  markers = markers[!is.na(markers[,3]),]
   markers = markers[markers[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
 
   # Put the marker positions on a Mb scale.
-  if(any(markers[,3] > 200)) {
+  if(any(markers[,3] > 200, na.rm = TRUE)) {
     markers[,3] = markers[,3] * 1e-6
   } # if(any(markers[,3] > 200)
 
@@ -298,13 +299,17 @@ plot.scanone.assoc = function(x, chr, bin.size = 1000, sig.thr,
 
   plot(unlist(pos), unlist(pv), pch = 16, col = c("black", "grey60")[col],
        las = 1, xaxt = "n", xlab = "", ylab = "-log10(p-value)", xaxs = "i", ...)
-  mtext(text = names(chrmid), side = 1, line = 2.5, at = chrmid, cex = 2)
 
   if(length(pos) == 1) {
 
     axis(side = 1)
+    mtext(text = names(chrmid), side = 1, line = 2.5, at = chrmid, cex = 2)
 
-  } # if(length(pos) == 1)
+  } else {
+
+    mtext(text = names(chrmid), side = 1, line = 0.5, at = chrmid, cex = 2)
+
+  } # else
 
   if(!missing(sig.thr)) {
 

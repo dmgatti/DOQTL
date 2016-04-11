@@ -11,7 +11,7 @@
 #            prob: numeric, value between 0 and 1.
 #            expandtomarkers: boolean, expand the QTL interval to the outermost
 #                 flanking markers if TRUE.  Default = FALSE.
-bayesint = function(qtl, chr, prob = 0.95, expandtomarkers = FALSE) {
+bayesint = function(qtl, chr, prob = 0.95, expandtomarkers = TRUE) {
 
   if(missing(qtl)) {
     stop("bayesint: The qtl cannot be null. Please supply a QTL object.")

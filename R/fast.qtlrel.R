@@ -18,28 +18,20 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     snps[,3] = snps[,3] * 1e-6
   } # if(max(snps[,3]) < 200)
 
-  prdat = list(pr = probs, chr = snps[,2], dist = snps[,3], snp = snps[,1])
-  class(prdat) = c(class(prdat), "addEff")
   err.cov = NULL
 
   if(!missing(K)) {
 
     K = as.matrix(K)
-    vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
-                EE = diag(nrow(K)))
-    vc = NULL
+    mod = NULL
+    # Force the variance component estimates to be positive.
     if(missing(addcovar)) {
-      vc = estVC(y = pheno, v = vTmp)
+      mod = regress(pheno ~ 1, ~K, pos = c(TRUE, TRUE))
     } else {
-      vc = estVC(y = pheno, x = addcovar, v = vTmp)
+      mod = regress(pheno ~ addcovar, ~K, pos = c(TRUE, TRUE))
     } # else
 
-    err.cov = matrix(0, nrow(K), ncol(K))
-    for(j in which(vc$nnl)) {
-      err.cov = err.cov + vTmp[[j]] * vc$par[names(vTmp)[j]]
-    } # for(j)
-
-    rm(vTmp)
+    err.cov = mod$sigma[1] * K + mod$sigma[2] * diag(length(pheno))
 
     # Invert the covariance matrix.
     eW = eigen(err.cov, symmetric = TRUE)
@@ -62,7 +54,7 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
     colnames(addcovar)[1] = "Intercept"
   } # else
 
-  # Remove A as the basis.
+  # Remove strain A as the basis.
   probs = probs[,-1,]
 
   # Null model.
@@ -92,9 +84,15 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
   lrs = 0
   lod = 0
 
+  # Find the SNPs with low MAF.
+  maf = apply(apply(probs, 2, colSums), 1, min)
+  run.pseudo = which(maf < 0.5)
+  run.qr = which(maf >= 0.5)
+
   if(!is.null(err.cov)) {
 
-    for(s in 1:nrow(snps)) {
+    # First run the SNPs where we can use the QR decomposition.
+    for(s in run.qr) {
       addx[,rng] = probs[,,s]
       xtmp = err.cov %*% addx
       qr.add = qr(xtmp)
@@ -102,15 +100,35 @@ fast.qtlrel = function(pheno, probs, K, addcovar, snps) {
       coef[s,] = qr.coef(qr.add, ytmp)
     } # for(s)
 
+    # Then run the SNPs where one of the allele frequencies is too low and
+    # we need to use the pseudo-inverse to solve the regression.
+    for(s in run.pseudo) {
+      addx[,rng] = probs[,,s]
+      xtmp = err.cov %*% addx
+      beta = pseudoinverse(t(xtmp) %*% xtmp) %*% t(xtmp) %*% ytmp
+      ss[s] = colSums((ytmp - xtmp %*% beta)^2)
+      coef[s,] = beta
+    } # for(s)
+
   } else {
 
-    for(s in 1:nrow(snps)) {
+    # First run the SNPs where we can use the QR decomposition.
+    for(s in run.qr) {
 
       addx[,rng] = probs[,,s]
       qr.add = qr(addx)
       ss[s] = sum(qr.resid(qr.add, pheno)^2)
       coef[s,] = qr.coef(qr.add, pheno)
 
+    } # for(s)
+
+    # Then run the SNPs where one of the allele frequencies is too low and
+    # we need to use the pseudo-inverse to solve the regression.
+    for(s in run.pseudo) {
+      addx[,rng] = probs[,,s]
+      beta = pseudoinverse(t(addx) %*% addx) %*% t(addx) %*% pheno
+      ss[s] = colSums((pheno - addx %*% beta)^2)
+      coef[s,] = beta
     } # for(s)
 
   } # else

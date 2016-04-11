@@ -688,9 +688,9 @@ dohap2sanger.internal = function(probs, markers, sdps) {
             } # function()
 
   # Create space for the unique SDPs and alleles that is 10 times smaller
-  # than the total number of Sanger SNPs.
+  # than the total number of Sanger SNPs or at least 100 columns.
   map = rep(NA, length(sdps))
-  allele.probs = matrix(0, dim(probs)[1], length(sdps) * 0.1, dimnames =
+  allele.probs = matrix(0, dim(probs)[1], max(length(sdps) * 0.1, 100), dimnames =
                  list(dimnames(probs)[[1]], NULL))
   map.index   = 1
   probs.index = 1

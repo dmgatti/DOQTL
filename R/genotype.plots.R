@@ -138,15 +138,7 @@ plot.genoprobs = function(x, snps, colors = "DO", chrlen = "mm10",
   # Subset the data to only include the SNPs in the snpfile.
   x = x[rownames(x) %in% snps[,1],]
   snps = snps[snps[,1] %in% rownames(x),]
-  prmsth = x[match(snps[,1], rownames(x)),]
-
-  # If we have 36 state diplotype probabilities, then condense them down to
-  # 8 state haplotype probabilities.
-  if(ncol(prsmth) > 8) {
-    mat = get.diplotype2haplotype.matrix(colnames(prsmth))
-    prsmth = prsmth %*% mat
-    states = colnames(prsmth)
-  } # if(ncol(prsmth) > 8)
+  x = x[match(snps[,1], rownames(x)),]
 
   # Plot the chromosome skeletons.
   old.warn = options("warn")$warn
@@ -362,12 +354,12 @@ write.genoprob.plots = function(path = ".", snps, type = c("max", "probs")) {
   
   if(!is.null(files)) {
   
-    prsmth = NULL
     for(f in files) {
     
       print(f)
       
       # This loads in 'prsmth'.
+      prsmth = NULL
       load(f)
       sample = gsub(paste("^", path, "/|\\.genotype\\.probs\\.Rdata$", sep = ""),
                     "", f)

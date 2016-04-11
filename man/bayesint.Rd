@@ -1,11 +1,11 @@
 \name{bayesint}
 \alias{bayesint}
-\title{FALSEind a Bayesian Credible Interval around a QTL.}
+\title{Find a Bayesian Credible Interval around a QTL.}
 \description{
   This function normalizes the area under the QTL curve on the given chromosome and finds a region that is 95% of the area.  Other probabilities can also be given.
 }
 \usage{
-  bayesint(qtl, chr, prob = 0.95, expandtomarkers = FALSE)
+  bayesint(qtl, chr, prob = 0.95, expandtomarkers = TRUE)
 }
 \arguments{
   \item{qtl}{
@@ -18,7 +18,7 @@
     numeric: must be between 0 and 1
   }
   \item{expandtomarkers}{
-    boolean: if TRUE, expand the QTL interval to the nearest flanking markers.  Default = FALSEALSE.
+    boolean: if TRUE, expand the QTL interval to the nearest flanking markers.  Default = TRUE.
   }
 }
 \value{
@@ -28,7 +28,7 @@
   Daniel Gatti
 }
 \references{
-  Saunak, S. (2001) A Statistical FALSEramework for Quantitative Trait Mapping.  \emph{Genetics}, \bold{159} (1), 371--387.
+  Saunak, S. (2001) A Statistical Framework for Quantitative Trait Mapping.  \emph{Genetics}, \bold{159} (1), 371--387.
 }
 \seealso{
   \code{\link{scanone}}, \code{\link{scanone.perm}}

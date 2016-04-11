@@ -130,3 +130,163 @@ void update_intensity(int* dims, double* t, double* r, double* tmeans,
     } /* for(st) */
   } /* for(snp) */
 } /* update_intensity() */
+
+
+/*******************************************************************************
+ *  update.c
+ *  
+ *  Created by Daniel Gatti on Aug. 16, 2011.
+ *  Copyright 2011 The Jackson Laboratory. All rights reserved.
+ *  int* dims: vector with three values: number of states, number of samples,
+ *             number of SNPs.
+ *  double* x: matrix of X values. num samples * num SNPs.
+ *  double* y: matrix of Y values. num samples * num SNPs.
+ *  double* xmeans: 2D matrix of theta and rho means. num states * num SNPs.
+ *                  These values will be updated and returned.
+ *  double* ymeans: 2D matrix of theta and rho means. num states * num SNPs.
+ *                  These values will be updated and returned.
+ *  double* xvars: 2D matrix of theta variances. num states * num SNPs.
+ *                  These values will be updated and returned.
+ *  double* yvars: 2D matrix of rho variances. num states * num SNPs.
+ *                  These values will be updated and returned.
+ *  double* covars: 2D matrix of X & Y covariances. num states * num SNPs.
+ *                  Since the covariance matrix is symmetric, we only need 
+ *                  to keep one value for the off-diagonal elements.
+ *                  These values will be updated and returned.
+ *  double* prsmth: 3D matrix of smoothed log-probabilities. num states *
+ *                  num samples * num SNPs.
+ *  double* founderxmeans: 2D matrix of founder X mean intensities.
+ *                         num_states * num_snps.
+ *  double* founderymeans: 2D matrix of founder Y mean intensities.
+ *                         num_states * num_snps.
+ * R passes a pointer down for arrays.  We have to index into the 3D arrays by
+ * hand.  SNPs are in the first slice.  Each slice has states in rows and 
+ * samples in columns.  Since R uses column-ordering for matrices, indexing
+ * through states, then samples, then SNPs should minimize cache-misses.
+ * At each SNP, the variance is pooled among all states and samples.
+ * We perform the calculations on a non-log scale.
+ */
+#include <R_ext/Print.h>
+#include <R_ext/Utils.h>
+#include <math.h>
+
+void update_intensity2(int* dims, double* x, double* y, double* xmeans, 
+                   double* ymeans, double* xvars, double* yvars, double* covars,
+                   double* prsmth, double* founderxmeans, double* founderymeans) {
+
+  int snp = 0; /* index for SNPs */
+  int sam = 0; /* index for samples */
+  int st  = 0; /* index for states */
+  int num_states  = dims[0]; /* Total number of states in prsmth. */
+  int num_samples = dims[1]; /* Total number of samples in prsmth. */
+  int num_snps    = dims[2]; /* Total number of SNPs in prsmth. */
+  int snp_index = 0;    /* SNP index for mean and covar arrays. */
+  int state_index = 0;  /* State index for mean and covar arrays. */
+  int x_snp_index = 0;  /* Index into x & y arrays. */
+  int x_index = 0;      /* Index into x & y arrays. */
+  double x_diff = 0.0;  /* Difference between x & x mean. */
+  double y_diff = 0.0;  /* Difference between y & y mean. */
+  int prsmth_slice = num_states * num_samples; /* One SNP slice in prsmth. */
+  int prsmth_snp_index = 0; /* SNP index into prsmth. */
+  double prsmth_sums[num_states];  /* prsmth sums for each state. */
+  double exp_prsmth[num_samples]; /* exp(prsmth) for the current sample. */
+  int pad = 2.0;  /* The number of founder samples that we use to pad
+                     the x and y locations. */ 
+  
+  /* Update the state means and variances. 
+   * We use all samples to update the means and variances.
+   * This is because if we have founders and F1s, we want their values to 
+   * anchor the means. */
+  for(snp = 0; snp < num_snps; snp++) {
+
+    if(snp % 100 == 0) R_CheckUserInterrupt();
+
+    /* Update the state means. 
+     * snp_index moves us to the current SNP in the mean arrays. */
+    snp_index   = snp * num_states;
+    x_snp_index = snp * num_samples;
+    prsmth_snp_index = snp * prsmth_slice;
+
+    /* prsmth_sums will hold the sum of prsmth values for each state across all 
+     * samples at the current SNP. */
+    for(st = 0; st < num_states; st++) {
+
+      /* Pad the counts w/ the founder means. */
+      prsmth_sums[st] = pad;
+      
+      /* state_index moves us to the current state in the mean arrays. */
+      state_index = st + snp_index;
+      xmeans[state_index] = pad * founderxmeans[state_index];
+      ymeans[state_index] = pad * founderymeans[state_index];
+
+      /* Use all samples to calculate the new state means. */
+      for(sam = 0; sam < num_samples; sam++) {
+
+        /* x_index moves us to the current sample in the x & y matrices. */
+	 x_index = sam + x_snp_index;
+
+	 /* Only use this data point if it is > 0.0. Negative values are missing data. */
+	 if((x[x_index] >= 0.0) & (y[x_index] >= 0.0)) {
+
+          exp_prsmth[sam] = exp(prsmth[st + sam * num_states + prsmth_snp_index]);
+
+          /* Update the x & y means. */
+          xmeans[state_index] += x[x_index] * exp_prsmth[sam];
+          ymeans[state_index] += y[x_index] * exp_prsmth[sam];
+
+          /* Add the current prsmth values to the sum for all samples at this
+           * state. */
+          prsmth_sums[st] += exp_prsmth[sam];
+
+        } /* if(x[x_index] > 0.0 & y[x_index] > 0.0) */
+      } /* for(sam) */
+
+      /* Divide by the sum of the prsmth at this state. */
+      xmeans[state_index] /= prsmth_sums[st];
+      ymeans[state_index] /= prsmth_sums[st];
+
+      /* Using the new means, update the state covariances. */
+      xvars[state_index]  = 0.0; 
+      yvars[state_index]  = 0.0; 
+      covars[state_index] = 0.0; 
+      prsmth_sums[st] -= pad;
+
+      /* If there are not enough samples in the current state,
+       * make sure the the denominator is not too small. */
+      if(prsmth_sums[st] < 1e-16) {
+    	  prsmth_sums[st] = 1e-16;
+      } /* if(prsmth_sums[st] < 1e-16) */
+
+      /* Use all samples to calculate the new state covariances. */
+      for(sam = 0; sam < num_samples; sam++) {
+
+        /* x_index moves us to the current sample in the x & y matrices. */
+        x_index = sam + x_snp_index;
+
+        /* Only use this data point if it is > 0.0. Negative values are missing data. */
+        if((x[x_index] >= 0.0) & (y[x_index] >= 0.0)) {	  	
+
+          x_diff = x[x_index] - xmeans[state_index];
+          xvars[state_index]  += x_diff * x_diff * exp_prsmth[sam];
+
+          y_diff = y[x_index] - ymeans[state_index];
+          yvars[state_index]  += y_diff * y_diff * exp_prsmth[sam];
+
+          covars[state_index] += x_diff * y_diff * exp_prsmth[sam];
+
+        } /* if(t[x_index] > 0.0 & r[x_index] > 0.0) */
+
+        /* Zero out the exp(prsmth) for this state. */
+        exp_prsmth[sam] = 0.0;
+
+      } /* for(sam) */
+
+      /* Divide by sum of all probs at this state.*/
+      state_index = st + snp_index;
+      xvars[state_index]  /= prsmth_sums[st];
+      yvars[state_index]  /= prsmth_sums[st];
+      covars[state_index] /= prsmth_sums[st];
+
+    } /* for(st) */
+  } /* for(snp) */
+} /* update_intensity2() */

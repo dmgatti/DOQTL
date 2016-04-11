@@ -139,7 +139,7 @@ We can summarize the recombinations using \texttt{summarize.genotype.transitions
 recomb = summarize.genotype.transitions(path = wd, snps = muga_snps)
 @
 
-This uses the maximum probability at each locus to determine the recombinations in each sample. The function summarizes the recombination locations and genotypes for each sample.
+This uses the maximum marginal probability at each locus to determine the recombinations in each sample. The function summarizes the recombination locations and genotypes for each sample.
 
 <<>>=
 head(recomb[[1]])

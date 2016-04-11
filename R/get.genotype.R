@@ -27,7 +27,10 @@ get.genotype = function(chr, pos, snp, markers, probs) {
   snp = as.numeric(factor(snp)) - 1
 
   # Get the slices from the haplotype probs matrix.
+  markers = markers[markers[,1] %in% dimnames(probs)[[3]],]
+  probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
   markers = markers[markers[,2] == chr,]
+  probs = probs[,,markers[,1]]
   markers = markers[max(which(markers[,3] < pos * 1e-6)):min(which(markers[,3] > pos * 1e-6)),]
 
   # Get the probs for these markers.

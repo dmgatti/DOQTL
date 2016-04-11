@@ -115,3 +115,5 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
 
   } /* for(snp) */  
 } /* emission_prob() */
+
+

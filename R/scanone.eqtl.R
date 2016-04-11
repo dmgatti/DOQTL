@@ -164,8 +164,10 @@ scanone.eqtl = function(expr, probs, K, addcovar, snps, sex) {
 # possibility of values in between those.
 ################################################################################
 matrixeqtl.snps = function(pheno, geno, K, addcovar) {
+
   pheno = as.matrix(t(pheno))
   geno  = as.matrix(t(geno))
+  
   # Create an error covariance matrix.
   if(!missing(K)) {
     eig = eigen(K, symmetric = TRUE)
@@ -178,16 +180,19 @@ matrixeqtl.snps = function(pheno, geno, K, addcovar) {
   } else {
     correctionMatrix = numeric()
   } # else
+  
   # Add an intercept and rotate the covariates.
   cvrt = matrix(1, nrow = 1, ncol = ncol(pheno))
   if(!missing(addcovar)) {
     cvrt = rbind(cvrt, t(addcovar))
   } # if(!missing(addcovar))
+  
   if(length(correctionMatrix) > 0) {
     cvrt = cvrt %*% correctionMatrix
   } # if(length(correctionMatrix) > 0)
   q = qr(t(cvrt))
   cvrt = t(qr.Q(q))
+  
   # Rotate and center the genes.
   if(length(correctionMatrix) > 0) {
     pheno = pheno %*% correctionMatrix
@@ -197,19 +202,23 @@ matrixeqtl.snps = function(pheno, geno, K, addcovar) {
   div[div == 0] = 1
   pheno = pheno / div
   rm(div)
+
   # Rotate and center the SNPs. 
   if(length(correctionMatrix) > 0) {
     geno = geno %*% correctionMatrix
   } # if(length(correctionMatrix) > 0)
+
   geno = geno - tcrossprod(geno, cvrt) %*% cvrt
   div = sqrt(rowSums(geno^2))
   drop = div < 5 * sqrt(ncol(geno) * .Machine$double.eps)
   div[drop] = 1
   geno = geno / div
   geno[drop,] = 0
+
   # Note: we return the R^2.
   return(tcrossprod(geno, pheno)^2)
-} # matrixeqtl.snps()
+
+  } # matrixeqtl.snps()
 
 
 ################################################################################
