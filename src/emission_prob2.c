@@ -25,8 +25,10 @@
 #include <R_ext/Utils.h> 
 #include "addlog.h"
 
-void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
-                   double* rhomeans, double* thetavars, double* rhovars, double* probs) {
+void emission_prob2(int* dims, double* x, double* y, double* xmeans,
+                   double* ymeans, double* xvars, double* yvars, double* covars, 
+                   double* probs) {
+
   int snp = 0; /* index for SNPs */
   int sam = 0; /* index for samples */
   int st  = 0; /* index for states */
@@ -40,28 +42,34 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
   int prob_snp_index = 0;    /* Index into probs array. */
   int prob_sample_index = 0; /* Index into probs array. */
   int prob_state_index = 0;  /* Index into probs array. */
-  int theta_index = 0;         /* Index into theta & y arrays. */
-  int theta_snp_index = 0;  /* Index into theta & y arrays. */
-  double theta_diff = 0.0;  /* Difference between theta & theta mean. */
-  double rho_diff = 0.0;  /* Difference between rho & rho mean. */
+  int x_index = 0;           /* Index into x & y arrays. */
+  int x_snp_index = 0;  /* Index into x & y arrays. */
+  double x_diff = 0.0;  /* Difference between x & x mean. */
+  double y_diff = 0.0;  /* Difference between y & y mean. */
+  double covar_x_diff_y_diff = 0.0; /* Product of covar * x_diff * y_diff. */
+  double det    = 0.0;  /* Determinant of cluster covariance matrix.*/
   double sample_sum = 0.0; /* Sum of probs for each sample. */
   double default_prob = log(1.0 / (double)num_states); /* Uniform prob for
                                                           missing data.  */
+  double log2pi = log(2.0 * M_PI);  /* log(2 * PI) */
 
   /* Update the state means and variances.
    * We use all samples to update the means and variances.
    * This is because if we have founders and F1s, we want their values to
    * anchor the means. */
-  for(snp = 0; snp < num_snps; snp++) {  
+  for(snp = 0; snp < num_snps; snp++) {
+
     /* Update the state means. */
-	/* snp_index moves us to the current SNP in the mean arrays. */
-	snp_index = snp * num_states;
-	/* prob_snp_index moves us to the correct SNP slice in probs. */
-	prob_snp_index = snp * prob_slice;
-	/* theta_snp_index moves us to the correct SNP slice in theta & rho. */
-    theta_snp_index = snp * num_samples;
+    /* snp_index moves us to the current SNP in the mean arrays. */
+    snp_index = snp * num_states;
+
+    /* prob_snp_index moves us to the correct SNP slice in probs. */
+    prob_snp_index = snp * prob_slice;
+
+    /* x_snp_index moves us to the correct SNP slice in x & y. */
+    x_snp_index = snp * num_samples;
  
-	/* Calculate emission probabilities for all samples. */
+    /* Calculate emission probabilities for all samples. */
     for(sam = 0; sam < num_samples; sam++) {
       
       /* Zero out the sample sum accumulator. */
@@ -70,11 +78,11 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
       /* prob_sample_index moves us to the sample column in probs. */
       prob_sample_index = prob_snp_index + sam * num_states;
 
-      /* theta_index moves us to the current sample in the theta & rho matrices. */
-      theta_index = sam + theta_snp_index;
+      /* x_index moves us to the current sample in the x & y matrices. */
+      x_index = sam + x_snp_index;
 
-	  /* Set the intensity < 0.0 to indicate missing data. */
-	  if((theta[theta_index] >= 0.0) && (rho[theta_index] >= 0.0)) {
+	 /* Set the intensity < 0.0 to indicate missing data. */
+	 if((x[x_index] >= 0.0) && (y[x_index] >= 0.0)) {
 
         /* Calculate the emission probabilities for each state. */
         for(st = 0; st < num_states; st++) {
@@ -83,19 +91,30 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
           state_index = st + snp_index;
           prob_state_index = st + prob_sample_index;
         
-	      /* Calculate x and rho difference from the state mean. */
-          theta_diff = theta[theta_index] - thetameans[state_index];
-          rho_diff   = rho[theta_index]   - rhomeans[state_index];
+          /* Calculate x and y difference from the state mean. */
+          x_diff = x[x_index] - xmeans[state_index];
+          y_diff = y[x_index] - ymeans[state_index];
+          covar_x_diff_y_diff = covars[state_index] * x_diff * y_diff;
 
-          /* Calculate the emission probability. */
-          probs[prob_state_index] = 
-        		log(0.5 / M_PI / sqrt(thetavars[state_index] * rhovars[state_index])) -
-        		0.5 * (((theta_diff * theta_diff) / thetavars[state_index]) + 
-        		       ((rho_diff * rho_diff) / rhovars[state_index]));
+          /* Calculate the emission probability from the bivariate Gaussian
+           * distribution. */
+          /* Determinant of covariance matrix. */
+          det = xvars[state_index] * yvars[state_index] - covars[state_index] * covars[state_index];
+
+          /* The inverse of a 2x2 matrix |ab| is 1/det | d -b|
+           *                             |cd|          |-c  a| */
+          /* This is a highly factored version of the bivariate Gaussian density. */
+          probs[prob_state_index] = log(sqrt(det)) - log2pi - (0.5 / det * 
+                (yvars[state_index] * x_diff * x_diff + xvars[state_index] * y_diff * y_diff - 
+                2 * covar_x_diff_y_diff));
+
           sample_sum = addlog(sample_sum, probs[prob_state_index]);
+
         } /* for(st) */
+
       } else {
-	    /* We have no intensity value. Place a uniform probability in all states. */
+
+        /* We have no intensity value. Place a uniform probability in all states. */
         for(st = 0; st < num_states; st++) {
 
           prob_state_index = st + prob_sample_index;
@@ -103,8 +122,9 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
           /* Calculate the emission probability. */
           probs[prob_state_index] = default_prob;
           sample_sum = addlog(sample_sum, probs[prob_state_index]);
+
         } /* for(st) */
-	  } /* else */
+      } /* else */
 		
       /* Divide by the sum of all states so that the probabilities sum to 1. */
       for(st = 0; st < num_states; st++) {
@@ -114,6 +134,4 @@ void emission_prob(int* dims, double* theta, double* rho, double* thetameans,
     } /* for(sam) */      
 
   } /* for(snp) */  
-} /* emission_prob() */
-
-
+} /* emission_prob2() */

@@ -6,7 +6,7 @@
 }
 \usage{
   calc.genoprob(data, chr = "all", output.dir = ".", plot = TRUE, 
-  array = c("megamuga", "muga", "other"), 
+  array = c("gigamuga", "megamuga", "muga", "other"), 
   sampletype = c("DO", "CC", "DOF1", "other"), method = c("intensity", "allele"), 
   founders, transprobs, snps)
 }
@@ -17,7 +17,7 @@
     When method = intensity:
        x: Numeric matrix, num.samples x num.snps, with X intensities for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
        y: Numeric matrix, num.samples x num.snps, with Y intensities for all samples. Sample IDs and SNP IDs must be in rownames and colnames.
-       sex: Character vector, containing "M" or F indicating sex. Sample IDs must be in names.
+       sex: Character vector, containing "M" or "F" indicating sex. Sample IDs must be in names.
 	   gen: Character matrix containing the generation of DO outbreeding for each sample. For the DO, this should be "DO" followed by a number with no space between them. For CC mice, this should be CC. Sample IDs must be in names.
 	   
     When method = allele:
@@ -35,7 +35,7 @@
      Boolean that is true if the user would like to plot a sample chromosome as the model progresses. Default  =  TRUE.
   }
   \item{array}{
-     Character string indicating the array type. Must be one of "megamuga", "muga" or "other". Default equals "megamuga".
+     Character string indicating the array type. Must be one of "gigamuga", "megamuga", "muga" or "other". Default equals "gigamuga".
   }
   \item{sampletype}{
      Character string containing the type of samples being run. Must be one of "DO", "CC", "DOF1", or "other". Default equals "DO".

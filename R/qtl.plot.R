@@ -154,9 +154,11 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
   lod = NULL
   coef = NULL
   if(chr == "X") {
+
     if(missing(sex)) {
       stop("Sex (either M or F) must be specified on X chromosome.")
     } # if(missing(sex))
+
     lod  = doqtl$lod$X
     coef = doqtl$coef$X
     if(sex == "F") {
@@ -164,6 +166,7 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
     } else {
       columns = match(paste("M", colors[,1], sep = "."), colnames(coef))
     } # else
+
     columns = columns[!is.na(columns)]
     coef = coef[,c(1,columns)]
     colnames(coef)[1] = "A"
@@ -172,7 +175,9 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
     # Center the coefficient values.
     coef[,2:ncol(coef)] = coef[,2:ncol(coef)] + coef[,1]
     coef = coef - rowMeans(coef)
+
   } else {
+
     lod = doqtl$lod$A
     lod = lod[lod[,2] == chr,]
     intercept = doqtl$coef$A[,1]
@@ -183,7 +188,9 @@ coefplot = function(doqtl, chr = 1, stat.name = "LOD", conf.int = TRUE, legend =
     # Center the coefficient values.
     coef[,2:ncol(coef)] = coef[,2:ncol(coef)] + coef[,1]
     coef = coef - rowMeans(coef)
+
   } # else 
+
   # Verify that the SNP IDs in the lod & coef matrices match.
   if(!all(lod[,1] == rownames(coef))) {
     stop(paste("The SNP IDs in column 1 of the qtl data frame must match",

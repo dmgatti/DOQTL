@@ -6,10 +6,12 @@
 
 static const R_CMethodDef cMethods[]  = {
     {"emission_prob", (DL_FUNC) &emission_prob, 8},
+    {"emission_prob2", (DL_FUNC) &emission_prob2, 9},
     {"filter_smooth_intensity", (DL_FUNC) &filter_smooth_intensity, 6},
     {"filter_smooth_allele", (DL_FUNC) &filter_smooth_allele, 7},
     {"kinship", (DL_FUNC) &kinship, 3},
     {"update_intensity", (DL_FUNC) &update_intensity, 10},
+    {"update_intensity2", (DL_FUNC) &update_intensity2, 11},
     {"update_alleles", (DL_FUNC) &update_alleles, 5},
     {"viterbi", (DL_FUNC) &viterbi, 5},
     {"DO_autosome_recomb_freq", (DL_FUNC) &DO_autosome_recomb_freq, 7},
