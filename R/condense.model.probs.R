@@ -83,7 +83,7 @@ get.additive = function(files, samples) {
     load(files[i]) # load in prsmth
 
     if(nrow(prsmth) != expected.rows) {
-      stop(paste("The file", files[i], "contains", nrow(files[i]), 
+      stop(paste("The file", files[i], "contains", nrow(prsmth), 
            "but we were expecting", expected.rows, "."))
     } # if(nrow(prsmth) != expected.rows)
 
