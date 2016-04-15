@@ -43,6 +43,10 @@ interpolate.markers = function(data, from, to) {
   if(max(to[,3]) > 200) {
     to[,3] = to[,3] * 1e-6
   } # if(max(to[,3]) > 200)
+  
+  # We need this to get rid of factors.
+  to[,1] = as.character(to[,1])
+  from[,1] = as.character(from[,1])
 
   # Impute the values by chromosome. Use the chromosomes in the smaller set.
   chr = intersect(unique(from[,2]), unique(to[,2]))
