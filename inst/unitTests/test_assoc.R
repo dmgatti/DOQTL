@@ -42,60 +42,15 @@ test_retrieve_correct_snps = function() {
   alt = CharacterList(alt(sanger2))
   alt = unstrsplit(alt, sep = ",")
   sanger2 = data.frame(CHROM = as.vector(seqnames(sanger2)), POS = start(sanger2),
-            ID = names(rowData(sanger2)), REF = as.vector(ref(sanger2)),
+            ID = names(rowRanges(sanger2)), REF = as.vector(ref(sanger2)),
             ALT = alt, geno, sdp = sdps, stringsAsFactors = FALSE)
-  sanger2$ID[grep("^6:", sanger2$ID)] = "."
   rownames(sanger2) = 1:nrow(sanger2)
 
-  checkEquals(target = sanger2, current = sanger, 
-       msg = "get.snp.patterns didn't return the correct values.")
+  for(i in 1:ncol(sanger)) {
+    checkEquals(target = sanger2[,i], current = sanger[,i], 
+         msg = "get.snp.patterns didn't return the correct values.")
+  } # for(i)
 
 } # test_retrieve_correct_snps()
 
-
-test_retrieve_imputed_genotypes = function() {
-
-  library(MUGAExampleData)
-  library(VariantAnnotation)
-
-  # Load in phenotype and genotype data.
-  data(pheno)
-  data(model.probs)
-  probs = model.probs
-  rm(model.probs)
-
-  # Load in SNPs.
-  load(url("ftp://ftp.jax.org/MUGA/muga_snps.Rdata"))
-
-  snps = muga_snps[muga_snps[,2] == 1,]
-  rm(muga_snps)
-  snps = snps[snps[,1] %in% dimnames(probs)[[3]],]
-  probs = probs[,,snps[,1]]
-
-  pheno.name = "WBC1"
-  qtl = assoc.map(pheno = pheno, pheno.col = pheno.name, probs = probs, 
-                  snps = snps, chr = 1, start = 70, end = 90)
-
-  pheno = pheno[!is.na(pheno[,pheno.name]),]
-  pheno = pheno[rownames(pheno) %in% rownames(probs),]
-  probs = probs[rownames(probs) %in% rownames(pheno),,]
-  probs = probs[rownames(pheno),,]
-  stopifnot(all(rownames(pheno) == rownames(probs)))
-
-  # Null model.
-  null.ss = sum((pheno[,pheno.name] - mean(pheno[,pheno.name]))^2)
-  lod = rep(0, nrow(snps))
-  pheno.column = which(colnames(pheno) == pheno.name)
-
-  # Full model.
-  tmpx = cbind(rep(1, nrow(pheno)), probs[,,1])
-  for(s in 1:nrow(snps)) {
-    tmpx[,-1] = probs[,,s]
-    lod[s] = sum(qr.resid(qr(tmpx), pheno[,pheno.column])^2)
-  } # for(s)
-  lod = -nrow(pheno) * log10(lod / null.ss) / 2
-
-  checkEqualsNumeric(target = lod, current = qtl$lod$A[,7])
-
-} # test_retrieve_imputed_genotypes()
 

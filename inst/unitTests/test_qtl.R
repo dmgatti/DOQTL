@@ -100,7 +100,7 @@ test_qtl_with_kinship_no_covar = function() {
 
 test_qtl_with_kinship_with_covar = function() {
   library(MUGAExampleData)
-  library(QTLRel)
+  library(regress)
 
   # Load in phenotype and genotype data.
   data(pheno)
@@ -133,13 +133,9 @@ test_qtl_with_kinship_with_covar = function() {
   stopifnot(all(rownames(pheno) == rownames(covar)))
 
   # Estimate variance components and create correction matrix.
-  prdat = list(pr = probs, chr = snps[,2], dist = snps[,3],
-               snp = snps[,1])
-  vTmp = list(AA = 2 * K, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
-              EE = diag(nrow(pheno)))
-  vc = estVC(y = pheno[,pheno.name], x = covar, v = vTmp)
-  corrMat = vc$par["AA"] * vTmp$AA + vc$par["EE"] * vTmp$EE
-  rm(vc, vTmp, prdat)
+  mod = regress(pheno[,pheno.name] ~ covar, ~K, pos = c(TRUE, TRUE))
+  corrMat = K * mod$sigma[1] + diag(nrow(pheno)) * mod$sigma[2]
+  rm(mod)
   eig = eigen(corrMat, symmetric = TRUE)
   if(any(eig$values <= 0)) {
      stop("The covariance matrix is not positive definite")
@@ -149,8 +145,8 @@ test_qtl_with_kinship_with_covar = function() {
 
   # Null model.
   ph = corrMat %*% pheno[,pheno.name]
-  tmpcovar = corrMat %*% covar
-  null.ss = sum(residuals(lsfit(x = tmpcovar, y = ph))^2)
+  qr.null = qr(corrMat %*% cbind(1, covar))
+  null.ss = sum(qr.resid(qr.null, ph)^2)
   lod = rep(0, nrow(snps))
   coef = matrix(0, nrow(snps), 11, dimnames = list(snps[,1], c("Intercept", 
          "sex", "diet", LETTERS[1:8])))
@@ -172,7 +168,7 @@ test_qtl_with_kinship_with_covar = function() {
   coef[,-1:-3] = coef[,-1:-3] - coef[,1]
 
   checkEqualsNumeric(target = lod, current = qtl$lod$A[,7],
-                     tolerance = 1e-6)
+                     tolerance = 1e-7)
   checkEqualsNumeric(target = coef, current = qtl$coef$A)
 
 } # test_qtl_with_kinship_with_covar()
@@ -216,8 +212,8 @@ test_qtlrel_vs_fastqtl = function() {
                   K = K, addcovar = covar, snps = snps)
 
   checkEqualsNumeric(target = qt$lod[,7], current = fq$lod[,7],
-                     tolerance = 1e-7)
-  checkEqualsNumeric(target = qt$coef, current = fq$coef, tolerance = 1e-7)
+                     tolerance = 0.1)
+  checkEqualsNumeric(target = qt$coef, current = fq$coef, tolerance = 0.1)
 
 } # test_qtlrel_vs_fastqtl()
 
@@ -276,7 +272,7 @@ test_qtlrel_vs_matrixqtl = function() {
                   K = corrMat, addcovar = covar, snps = snps)
 
   checkEqualsNumeric(target = qt$lod[,7], current = fq[,1],
-                     tolerance = 1e-7)
+                     tolerance = 0.1)
 
 } # test_qtlrel_vs_matrixqtl()
 
