@@ -47,8 +47,8 @@ void viterbi(int* dims, double* a, double* b, int* v_path, double* v_prob) {
    * previous state. num_samples rows x num_snps columns. */
   int* ptr = (int*)malloc(num_snps * num_samples * sizeof(int));
   
-  memset(pr, 0, sizeof(pr));
-  memset(ptr, 0, sizeof(ptr));
+  memset(pr, 0, sizeof(*pr));
+  memset(ptr, 0, sizeof(*ptr));
   
   Rprintf("A\n");
   
