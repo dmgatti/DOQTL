@@ -50,12 +50,12 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   x_file = file(paste(out.path, "x.txt", sep = "/"), open = "w")
   y_file = file(paste(out.path, "y.txt", sep = "/"), open = "w")
   g_file = file(paste(out.path, "geno.txt", sep = "/"), open = "w")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = x_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = x_file, sep = "\n")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = y_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = y_file, sep = "\n")
-  writeLines(text = snps$SNP_ID[-length(snps$SNP_ID)], con = g_file, sep = "\t")
-  writeLines(text = snps$SNP_ID[length(snps$SNP_ID)],  con = g_file, sep = "\n")
+  writeLines(text = snps[-length(snps[,1]),1], con = x_file, sep = "\t")
+  writeLines(text = snps[length(snps[,1]),1],  con = x_file, sep = "\n")
+  writeLines(text = snps[-length(snps[,1]),1], con = y_file, sep = "\t")
+  writeLines(text = snps[length(snps[,1]),1],  con = y_file, sep = "\n")
+  writeLines(text = snps[-length(snps[,1]),1], con = g_file, sep = "\t")
+  writeLines(text = snps[length(snps[,1]),1],  con = g_file, sep = "\n")
 
   call.rate.batch = NULL
   for(i in 1:length(in.path)) {
@@ -124,7 +124,7 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
         samples.in.data[j] = paste(prefix[i], samples.in.data[j], sep = "")
       } # if(!missing(prefix)) 
       # Sort the data to match the SNP order.
-      data = data[,match(snps$SNP_ID, colnames(data))]
+      data = data[,match(snps[,1], colnames(data))]
       # X
       writeLines(samples.in.data[j], con = x_file, sep = "\t")
       xint = data[rownames(data) == "X",]
