@@ -177,7 +177,7 @@ assoc.map = function(pheno, pheno.col = 1, probs, K, addcovar, snps,
   probs = probs[,,dimnames(probs)[[3]] %in% snps[,1],drop = FALSE]
   snps  = snps[snps[,1] %in% dimnames(probs)[[3]],,drop = FALSE]
 
-  # Extract the SNPs form the Sanger file.
+  # Extract the SNPs from the Sanger file.
   print("Retrieving SNPs...")
   strains = get.vcf.strains(snp.file)
   if(cross == "DO" | cross == "CC") {
