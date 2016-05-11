@@ -120,7 +120,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 
         # Get the MUGA SNPs and subset them to keep the ones that we use for 
         # genotyping.
-        snps = snps[snps$Collaborative.Cross == 1,]
+        snps = snps[snps$tier <= 2,]
         snps = snps[!is.na(snps[,4]),1:4]
 
         # Remove founders with too much missing data.
@@ -148,7 +148,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       ### GigaMUGA ###
       } else if(array == "gigamuga") {
 
-        snps = snps[grep("^(B6|JAX|ICR|UNC|Xi)", snps[,1]),]
+        snps = snps[snps$tier <= 2 & snps$is.biallelic == TRUE,]
 
         # Make sure that the marker positions always increase.
         for(i in 2:nrow(snps)) {

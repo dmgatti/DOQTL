@@ -125,14 +125,14 @@ get.snp.patterns = function(snp.file = snp.file, gr = gr,
           which = gr)
   snps = readVcf(file = snp.file, genome = "mm10", param = param)
 
-  message(paste("Retrieved", nrow(snps), "SNPs."))
+  print(paste("Retrieved", nrow(snps), "SNPs."))
 
   # If the user wants to filter by quality, keep only SNPs where all calls have
   # quality == 1.
   if(filter.by.qual) {
 
     snps = snps[rowSums(geno(snps)$FI, na.rm = TRUE) == ncol(snps)]
-    message(paste("Retaining", nrow(snps), "high quality SNPs."))
+    print(paste("Retaining", nrow(snps), "high quality SNPs."))
 
   } # if(filter.by.qual)
 
@@ -140,7 +140,7 @@ get.snp.patterns = function(snp.file = snp.file, gr = gr,
   if(polymorphic) {
 
     snps = snps[rowSums(geno(snps)$GT == "0/0", na.rm = TRUE) < ncol(snps)]
-    message(paste("Retaining", nrow(snps), "polymorphic SNPs."))
+    print(paste("Retaining", nrow(snps), "polymorphic SNPs."))
 
   } # if(polymorphic)
 
