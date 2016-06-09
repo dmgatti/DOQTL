@@ -868,7 +868,7 @@ assoc.plot = function(results,
     par(plt = c(0.12, 0.99, 0, 0.9), las = 1)
     if(!missing(thr)) {
       if(type == "pv") {
-        res = rbind(results[1,], results[-log10(results[,12]) >= thr,], 
+        res = rbind(results[1,], results[which(-log10(results[,12]) >= thr),], 
               results[nrow(results),])
       } else {
         res = rbind(results[1,], results[results[,12] >= thr,], 
