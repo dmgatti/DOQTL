@@ -249,7 +249,7 @@ s1.assoc = function(obj, sdp.file) {
 
 # Plotting for scanone.assoc.
 plot.scanone.assoc = function(x, chr, bin.size = 1000, sig.thr, 
-                     sig.col = "red", ...) {
+                     sig.col = "red", show.chr = TRUE, ...)  {
 
   if(!missing(chr)) {
     x = x[names(x) %in% chr]
@@ -300,15 +300,17 @@ plot.scanone.assoc = function(x, chr, bin.size = 1000, sig.thr,
   plot(unlist(pos), unlist(pv), pch = 16, col = c("black", "grey60")[col],
        las = 1, xaxt = "n", xlab = "", ylab = "-log10(p-value)", xaxs = "i", ...)
 
-  if(length(pos) == 1) {
+  if(show.chr) {
+    if(length(pos) == 1) {
 
-    axis(side = 1)
-    mtext(text = names(chrmid), side = 1, line = 2.5, at = chrmid, cex = 1.5)
+      axis(side = 1)
+      mtext(text = names(chrmid), side = 1, line = 2.5, at = chrmid, cex = 1.5)
 
-  } else {
+    } else {
 
-    mtext(text = names(chrmid), side = 1, line = 0.5, at = chrmid, cex = 1.5)
+      mtext(text = names(chrmid), side = 1, line = 0.5, at = chrmid, cex = 1.5)
 
+    } # else
   } # else
 
   if(!missing(sig.thr)) {
