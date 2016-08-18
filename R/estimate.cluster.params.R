@@ -2,8 +2,7 @@
 # Arguments: founders: list with theta, rho, sex and codes for the founders.
 #                      Should also include the states for the current chr.
 #            chr: character containing the current chromosome.
-estimate.cluster.params = function(founders, data, chr, 
-                                   clust = c("mclust", "pamk")) {
+estimate.cluster.params = function(founders, data, chr, clust = c("mclust", "pamk")) {
 
   clust = match.arg(clust)
   min.prop = 0.02
