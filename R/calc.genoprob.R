@@ -416,8 +416,22 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 #  snps = fill.in.snps(snps)
 
   # Fill in any missing F1s.
-  attr(founders, "method") = attr(data, "method")
-  founders = add.missing.F1s(founders, snps, sampletype)
+  if(sampletype != "CC") {
+    attr(founders, "method") = attr(data, "method")
+    founders = add.missing.F1s(founders, snps, sampletype)
+  } else {
+    keep = which(founders$code %in% paste0(LETTERS[1:8], LETTERS[1:8]))
+    dims = lapply(founders, dim)
+    vecs = which(sapply(dims, is.null))
+    vecs = vecs[names(vecs) != "states"]
+    mats = which(!sapply(dims, is.null))
+    for(i in vecs) {
+      founders[[i]] = founders[[i]][keep]
+    } # for(i)
+    for(i in mats) {
+      founders[[i]] = founders[[i]][keep,,drop = FALSE]
+    } # for(i)
+  } # else
 
   # Add a slash to the output directory, if required.
   output.dir = add.slash(output.dir)
@@ -518,11 +532,11 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
   } else if(method == "intensity") {
 
      if(any(!is.nan(founders$x))) {
-       print("NaN values in founder X intensities.")
+       warning("NaN values in founder X intensities.")
      } # if(any(!is.nan(founders$x)))
 
      if(any(!is.nan(founders$y))) {
-       print("NaN values in founder Y intensities.")
+       warning("NaN values in founder Y intensities.")
      } # if(any(!is.nan(founders$y)))
 
      stopifnot(ncol(data$x) > 0 & ncol(data$y) > 0)
@@ -674,8 +688,6 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
     muga_snps = NULL
     load(url(snpfile))
     snps = muga_snps
-    snps = snps[snps[,1] %in% muga.snps.to.keep,]
-    snps = snps[!is.na(snps[,4]),]
 
     # We have to put this line in to satisfy R CMD build --as-cran
     muga_sex  = NULL
@@ -716,7 +728,6 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
     MM_snps = NULL
     load(url(snpfile))
     snps = MM_snps
-    snps = snps[!is.na(snps[,4]),]
 
     # We have to put this line in to satisfy R CMD build --as-cran
     MM_sex  = NULL
@@ -756,8 +767,6 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
     GM_snps = NULL
     load(url(snpfile))
     snps = GM_snps
-    snps = snps[!is.na(snps[,4]),]
-    snps = snps[snps[,3] > 0,]
 
     # We have to put this line in to satisfy R CMD build --as-cran
     GM_sex  = NULL

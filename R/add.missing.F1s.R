@@ -16,6 +16,11 @@ add.missing.F1s = function(founders, snps, sampletype = c("DO", "CC", "DOF1",
 
   missing = NULL
 
+  if(any(nchar(founders$code) != 2)) {
+    stop(paste("All founder codes must be 2 letters long. Please check",
+	     "the founder codes and make sure that they are 2 letters long."))
+  } # if(any(nchar(founders$code) != 2))
+  
   if(length(unique(founders$sex)) == 2) {
 
     missing = founders$states$auto[which(!founders$states$auto %in% 
