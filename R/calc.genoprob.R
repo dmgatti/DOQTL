@@ -269,22 +269,12 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       # Keep only the collaborative cross SNPs.
 #      snps = snps[snps$Collaborative.Cross == 1 | snps$MUGA == 1 |
 #	              snps$C57BL.6 == 1,]
-      snps = snps[snps$Collaborative.Cross == 1 | snps$Chr.Y == 1,]
-      snps = snps[!is.na(snps[,4]) | snps[,2] == "Y",]
+      snps = snps[snps$tier == 1 | snps$tier == 2,]
       snps = snps[,1:4]
 
     } else if (array == "gigamuga") {
 
-      snps = snps[grep("^(B6|JAX|ICR|UNC|Xi)", snps[,1]),]
-
-      # Make sure that the marker positions always increase.
-      for(i in 2:nrow(snps)) {
-        if(snps[i-1,2] == snps[i,2]) {  
-          if(snps[i,3] <= snps[i-1,3]) {
-            snps[i,3] = snps[i-1,3] + 0.001
-          } # if(snps[i,3] <= snps[i-1,3])
-        } # if(snps[i-1,2] == snps[i,2])
-      } # for(i)
+      snps = snps[snps$tier == 1 | snps$tier == 2,]
 
     } else {
 
@@ -297,9 +287,11 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 
         # Remove founders with too much missing data.
         remove = which(rowSums(founders$geno == "N") > 5000)
-        founders$geno = founders$geno[-remove,]
-        founders$sex  = founders$sex[-remove]
-        founders$code = founders$code[-remove]
+        if(length(remove) > 0) {
+          founders$geno = founders$geno[-remove,]
+          founders$sex  = founders$sex[-remove]
+          founders$code = founders$code[-remove]
+        } # if(length(remove) > 0)
 
         founders = list(geno = t(founders$geno[rownames(founders$geno) %in% snps[,1],]),
                         sex = founders$sex, code = founders$code,
@@ -311,24 +303,28 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
         founders$code = founders$code[keep]
 
         # Add the mutant founders to the founders.
-        founders$geno = cbind(mut.founders$geno, founders$geno)
+        founders$geno = rbind(mut.founders$geno, founders$geno)
 
       ### Intensity ###
       } else if(method == "intensity") {
 
         # Remove founders with too much missing data.
         remove = which(rowSums(founders$x < 0) > 1000)
-        founders$x = founders$x[-remove,]
-        founders$y = founders$y[-remove,]
-        founders$sex  = founders$sex[-remove]
-        founders$code = founders$code[-remove]
+        if(length(remove > 0)) {
+          founders$x = founders$x[-remove,]
+          founders$y = founders$y[-remove,]
+          founders$sex  = founders$sex[-remove]
+          founders$code = founders$code[-remove]
+        } # if(length(remove > 0) 
 
         # Remove founders with NA founder codes (i.e. non-DO founders)
         remove = which(is.na(founders$code))
-        founders$x = founders$x[-remove,]
-        founders$y = founders$y[-remove,]
-        founders$sex  = founders$sex[-remove]
-        founders$code = founders$code[-remove]
+        if(length(remove > 0)) {
+          founders$x = founders$x[-remove,]
+          founders$y = founders$y[-remove,]
+          founders$sex  = founders$sex[-remove]
+          founders$code = founders$code[-remove]
+        } # if(length(remove > 0) 
 
         # Keep only the inbred founders and discard the F1s.
         founders$code = founders$code[founders$code %in% paste(LETTERS[1:8], LETTERS[1:8], sep = "")]
@@ -340,7 +336,8 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
         stopifnot(all(colnames(founders$y) == colnames(founders$y)))
 
         # Add the mutant founders to the founders.
-        founders$geno = cbind(mut.founders$geno, founders$geno)
+        founders$x = rbind(mut.founders$x, founders$x)
+        founders$y = rbind(mut.founders$y, founders$y)
 
         if(!all(colnames(data$x) == colnames(founders$x))) {
           stop("calc.genoprob: SNP names in data$x and founders$x do not match for MegaMUGA.")
@@ -352,14 +349,14 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 
       } # else
 
-      founders$sex  = cbind(mut.founders$sex, founders$sex)
-      founders$code = cbind(mut.founders$code, founders$code)
+      founders$sex  = c(mut.founders$sex, founders$sex)
+      founders$code = c(mut.founders$code, founders$code)
 
       states = paste(LETTERS[1:8], "I", sep = "")
-      if(founders$direction == "DOxMUT") {
+      if(mut.founders$direction == "DOxMUT") {
         states = list(auto = states, X = list(F = states, M = LETTERS[1:8]),
                  founders = LETTERS[1:9])
-      } else if(founders$direction == "MUTxDO") {
+      } else if(mut.founders$direction == "MUTxDO") {
         states = list(auto = states, X = list(F = states, M = "I"),
                  founders = LETTERS[1:9])
       } else {
@@ -368,8 +365,8 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
              "help(calc.genoprob) for more information."))
       } # else
 
-      founders = list(x = x, y = y, sex = sex, code = code,
-                      states = states, direction = founders$direction)
+      founders = list(x = founders$x, y = founders$y, sex = founders$sex, 
+                      code = founders$code, states = states, direction = mut.founders$direction)
       attr(founders, "method") = method
 
   } else if(sampletype == "HS") {
@@ -411,9 +408,21 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
   data$sex = toupper(data$sex)
   founders$sex = toupper(founders$sex)
 
-  # Fill in the SNP cM values for which consecutive SNPs have the same cM value,
-  # even though they are at different Mb positions.
-#  snps = fill.in.snps(snps)
+  # If chr == all, then change the chr value to the chromosomes we have.
+  if(chr == "all") {
+    chr = unique(snps[,2])
+  } # if(chr == "all")
+
+  # Subset the markers to include only the chromosomes that we are running.
+  snps = snps[snps[,2] %in% chr,]
+
+  # Synchronize the markers in the allele calls and snps.
+  tmp = synchronize.snps(snps, data, founders)
+  data = tmp$data
+  founders = tmp$founders
+  snps = tmp$markers
+  rm(tmp)
+  gc()
 
   # Fill in any missing F1s.
   if(sampletype != "CC") {
@@ -461,22 +470,6 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
           "sort the SNPs on each chromosome such that the cM value",
           "increases monotonically."))
   } # if(any(sapply(tmp, "<" 0))
-
-  # If chr == all, then change the chr value to the chromosomes we have.
-  if(chr == "all") {
-    chr = unique(snps[,2])
-  } # if(chr == "all")
-
-  # Subset the markers to include only the chromosomes that we are running.
-  snps = snps[snps[,2] %in% chr,]
-
-  # Synchronize the markers in the allele calls and snps.
-  tmp = synchronize.snps(snps, data, founders)
-  data = tmp$data
-  founders = tmp$founders
-  snps = tmp$markers
-  rm(tmp)
-  gc()
 
   # Make the names unique.
   names(data$sex) = make.unique(make.names(names(data$sex)))
