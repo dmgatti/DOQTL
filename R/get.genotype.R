@@ -31,7 +31,7 @@ get.genotype = function(chr, pos, snp, markers, probs) {
   probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
   markers = markers[markers[,2] == chr,]
   probs = probs[,,markers[,1]]
-  markers = markers[max(which(markers[,3] < pos * 1e-6)):min(which(markers[,3] > pos * 1e-6)),]
+  markers = markers[max(which(markers[,3] < pos * 1e-6), 1):min(which(markers[,3] > pos * 1e-6)),]
 
   # Get the probs for these markers.
   probs = probs[,,markers[,1], drop = FALSE]
