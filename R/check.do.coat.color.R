@@ -15,13 +15,13 @@ check.do.coat.color = function(probs, markers, coat) {
 
   # Albino: Chr 7: 87427405 - 87493411
   mk = markers[markers[,2] == 7,]
-  mk = which.min(abs(markers[,3] - mean(87.427405, 87.493411)))
+  mk = mk[which.min(abs(mk[,3] - mean(87.427405, 87.493411))),1]
   albino = check.genotype(probs[,,mk], coat == "albino", 
            contrib.founders = c("A", "D"))
 
   # Black: Chr2: 154791402 - 155051012
   mk = markers[markers[,2] == 2,]
-  mk = which.min(abs(markers[,3] - mean(154.791402, 155.051012)))
+  mk = mk[which.min(abs(mk[,3] - mean(154.791402, 155.051012))),1]
   black = check.genotype(probs[,,mk], coat == "black", 
           contrib.founders = c("A", "B"))
 
