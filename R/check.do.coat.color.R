@@ -16,13 +16,13 @@ check.do.coat.color = function(probs, markers, coat) {
   # Albino: Chr 7: 87427405 - 87493411
   mk = markers[markers[,2] == 7,]
   mk = which.min(abs(markers[,3] - mean(87.427405, 87.493411)))
-  albino = check.genotypes(probs[,,mk[1,1]], coat == "albino", 
+  albino = check.genotype(probs[,,mk], coat == "albino", 
            contrib.founders = c("A", "D"))
 
   # Black: Chr2: 154791402 - 155051012
   mk = markers[markers[,2] == 2,]
   mk = which.min(abs(markers[,3] - mean(154.791402, 155.051012)))
-  black = check.genotypes(probs[,,mk[1,1]], coat == "black", 
+  black = check.genotype(probs[,,mk], coat == "black", 
           contrib.founders = c("A", "B"))
 
   return(cbind(albino, black))
@@ -30,27 +30,36 @@ check.do.coat.color = function(probs, markers, coat) {
 } # check.do.coat.color()
 
 
-# Args: probs: Either an 8 or 36 state probs matrix.
+# Args: pr: Either an 8 or 36 state probs matrix.
 #       coat: Booean vector in which TRUE indicates that the mouse has the coat
 #             color phenotype. i.e. albino = TRUE
 #       contrib.founders: Character vector containing the letter codes for
 #             the founders that contribute the coat color allele. i.e. "A", "D".
-check.genotype = function(probs, coat, contrib.founders) {
+check.genotype = function(pr, coat, contrib.founders) {
 
   # Get the two letter genotype calls at the given marker.
-  gt = get.max.geno(probs[,,marker,drop = FALSE])
+  rnk = apply(pr, 1, order)
+  gt = cbind(LETTERS[1:8][rnk[7,]], LETTERS[1:8][rnk[8,]])
+  gt = t(apply(gt, 1, sort))
+  homo = apply(pr, 1, max)
+  homo = which(homo > 0.75)
+  gt[homo,] = cbind(LETTERS[1:8][rnk[8,homo]], LETTERS[1:8][rnk[8,homo]])
+  gt = apply(gt, 1, paste0, collapse = "")
+  names(gt) = rownames(pr)
   
   # Compute the genotype combinations that can create the coat color.
-  ok.gt = sort(outer(contrib.founders, contrib.founders, paste0))
+  possible.gt = sort(outer(contrib.founders, contrib.founders, paste0))
 
-  results = cbind(sample = name(gt), genotype = gt, coat = coat, 
-            gt.ok, coat.ok)
+  results = data.frame(sample = names(gt), genotype = gt, coat = coat, 
+            gt.ok = rep(NA, length(gt)), coat.ok = rep(NA, length(gt)))
 
   # Check that the coat color phenotype has the correct genotype.
-  results$gt.ok = coat[gt %in% ok.gt]
+  samples.with.color.geno = which(results$genotype %in% possible.gt)
+  results$gt.ok[samples.with.color.geno] = results$coat[samples.with.color.geno] == TRUE
 
   # Check that the coat color genotype had the correct coat color.
-  results$coat.ok = gt[coat] %in% ok.gt
+  samples.with.coat.color = which(coat)
+  results$coat.ok[samples.with.coat.color] = results$genotype[samples.with.coat.color] %in% possible.gt
 
   return(results)
 
