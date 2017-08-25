@@ -150,15 +150,6 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 
         snps = snps[snps$tier <= 2 & snps$is.biallelic == TRUE,]
 
-        # Make sure that the marker positions always increase.
-        for(i in 2:nrow(snps)) {
-          if(snps[i-1,2] == snps[i,2]) {  
-            if(snps[i,3] <= snps[i-1,3]) {
-              snps[i,3] = snps[i-1,3] + 0.001
-            } # if(snps[i,3] <= snps[i-1,3])
-          } # if(snps[i-1,2] == snps[i,2])
-        } # for(i)
-
       } # else if(array == "gigamuga")
 
       founders = founders[names(founders) != "snps"]

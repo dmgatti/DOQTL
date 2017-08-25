@@ -19,6 +19,10 @@ genoprobs2hapblocks = function(probs, markers) {
 
 haploprobs2hapblocks = function(probs, markers) {
 
+  probs = probs[rownames(probs) %in% markers[,1],]
+  markers = markers[markers[,1] %in% rownames(probs),]
+  probs = probs[markers[,1],]
+
   # Multiply by 2 and round to get the clear haplotype calls.
   p2 = round(2 * probs)
 
@@ -38,7 +42,7 @@ haploprobs2hapblocks = function(probs, markers) {
   haps = vector("list", length(diff))
   names(haps) = names(diff)
 
-  # Loop through and get the haplotyep boundaries on eahc chromosome.
+  # Loop through and get the haplotype boundaries on each chromosome.
   for(i in 1:length(p2)) {
 
     p2[[i]] = as.matrix(p2[[i]])

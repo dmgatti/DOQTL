@@ -95,6 +95,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
         female.r.t.covars = tmp$params$r.t.covars
         female.prsmth = tmp$prsmth
         rm(tmp)
+
       } # if(length(females) > 0)
 
       males = which(data$sex == "M")
@@ -131,6 +132,7 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
         male.r.t.covars = tmp$params$r.t.covars
         male.prsmth = tmp$prsmth
         rm(tmp)
+
       } # if(length(males) > 0)
 	  
       # Combine the male and female prsmth data.

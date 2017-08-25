@@ -9,7 +9,7 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
   # Estimate the (theta, rho) genotype cluster means and variances.
   params = estimate.cluster.params(founders = founders, data = data, chr = chr,
                                   clust = clust)
-	  save(params, file = paste0("chr", chr, ".initial.cluster.params.Rdata"))
+  save(params, file = paste0("chr", chr, ".initial.cluster.params.Rdata"))
 
   # Set negative values to NA for this. They will be removed when we take the 
   # means.
@@ -76,29 +76,36 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
   } # else
 
   while(p <= maxIter & logLik - lastLogLik > epsilon) {
+
     print(date())
     print(p)
+
     # Optional plotting code to watch the HMM progress.
-    if(FALSE) {
-      layout(matrix(1:2, 1, 2))
-      prsmth.plot(1, founders$states, init.hmm$prsmth)
-      intensity.mean.covar.plot(s = 3, states = founders$states, theta = data$theta, 
-                      rho = data$rho, r.t.means = params$r.t.means, 
-                      r.t.covars = params$r.t.covars)
-    } # if(plot)
+#    if(TRUE) {
+#    layout(matrix(1:2, 1, 2))
+#     prsmth.plot(1, founders$states, init.hmm$prsmth)
+#      intensity.mean.covar.plot(s = 3, states = founders$states, theta = data$theta, 
+#                      rho = data$rho, r.t.means = params$r.t.means, 
+#                      r.t.covars = params$r.t.covars)
+#    } # if(plot)
+
     # Initialize the log-likelihood to a large negative number.
     lastLogLik = logLik
+
     # Filter and smooth each generation separately because they each have a
     # different transition probability matrix.
     print("Filtering & smoothing...")
     lltmp = matrix(-.Machine$double.xmax, 1, 1)
+
     for(i in 1:length(a)) {
       # Filter
       gen = 1:nrow(data$theta)
-      if(any(names(data) == "gen")) {
-        print(paste("gen", names(a)[i]))
-        gen = which(data$gen == names(a)[i])
-      } # if(any(names(data) == "gen"))
+      if(attr(data, "sampletype") != "CC") {
+        if(any(names(data) == "gen")) {
+          print(paste("gen", names(a)[i]))
+          gen = which(data$gen == names(a)[i])
+        } # if(any(names(data) == "gen"))
+     } # if(attr(data, "sampletype") != "CC")
       
       res = .C(C_filter_smooth_intensity, 
                dims = as.integer(dim(init.hmm$prsmth[,gen,,drop = FALSE])),
@@ -110,13 +117,16 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
       init.hmm$prsmth[,gen,] = res$prsmth
       lltmp = addLog(lltmp, res$loglik)
     } # for(i)
+
     logLik = lltmp
     print(paste("LogLik =", logLik))
+
     # Set the epsilon to be 1/1000 of the starting value.
     # TBD: Is there a better way to set epsilon?
     if(p == 1) {
       epsilon = abs(logLik * 0.001)
     } # if(p == 1)
+
     # Update the parameters and state means and variances.
     print("update")
     params = parameter.update.intensity(data = data, params = params, 
@@ -125,6 +135,7 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
     p = p + 1
 	
     gc()
+
   } # while(p < maxIter & logLik - lastLogLik > epsilon
   print(date())
   
