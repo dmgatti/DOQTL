@@ -68,6 +68,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
 
       # Only run if there are samples that are female.
       if(length(females) > 0) {
+
         print("Females")
         cur.data = list(geno = data$geno[females,], 
                    sex = data$sex[females], gen = data$gen[females])
@@ -83,6 +84,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
         female.prsmth = tmp$prsmth
         female.b = tmp$b
         rm(tmp)
+
       } # if(length(females) > 0)
 
       # Run the males, which only have founder states, not F1s because the 
@@ -94,6 +96,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
       # Only run if there are samples that are male.  If only founders are
       # male, there's no point in running this.
       if(length(males) > 0) {
+	  
         print("Males")
         cur.data = list(geno = data$geno[males,], 
                    sex = data$sex[males], gen = data$gen[males])
@@ -110,6 +113,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
         male.prsmth = tmp$prsmth
         male.b = tmp$b
         rm(tmp)
+		
       } # if(length(males) > 0)
 
       # Combine the male and female prsmth data.
@@ -122,8 +126,11 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
           m = match(dimnames(female.prsmth)[[2]], dimnames(prsmth)[[2]])
           prsmth[,m,] = female.prsmth
           m = match(dimnames(male.prsmth)[[2]], dimnames(prsmth)[[2]])
-          m2 = match(paste(dimnames(male.prsmth)[[1]], dimnames(male.prsmth)[[1]], sep = ""),
-               dimnames(prsmth)[[1]])
+          m2 = match(paste0(rownames(male.prsmth), rownames(male.prsmth)),
+               rownames(prsmth))
+          if(attr(data, "sampletype") == "DOF1") {
+		    m2 = match(paste0(rownames(male.prsmth), "I"), rownames(prsmth))
+		  } # if(attr(data, "sampletype") == "DOF1")
           prsmth[m2,m,] = male.prsmth
           rm(female.prsmth, male.prsmth)
         } else {

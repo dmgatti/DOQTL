@@ -26,7 +26,7 @@ hmm.allele = function(data, founders, sex, snps, chr, trans.prob.fxn) {
   # Save the initial emission probabilities as pseudocounts.
   pseudocounts = b
   a = NULL
-  if(attr(data, "sampletype") %in% c("DO", "HS", "HSrat")) {
+  if(attr(data, "sampletype") %in% c("DO", "DOF1", "HS", "HSrat")) {
 
     a = trans.prob.fxn(states = founders$states, snps = snps, chr = chr, 
         sex = sex, gen = data$gen)

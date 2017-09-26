@@ -247,6 +247,13 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
 ###############
   } else if (sampletype == "DOF1") {
 
+    # founders is a list containing:
+	# geno: character matrix with A,C,G,T,H or N calls. Num.samples x num.markers.
+	# code: character vectors with 2 letter strains codes for founders.
+	# sex: names character vector with either "F" or "M".
+	# direction: either "DOxMUT" for female DO x mutant male or "MUTxDO" for mutant
+	#            female x DO male.
+  
     # Users must provide genotypes for the mutant founders.
     mut.founders = founders
 
@@ -277,23 +284,24 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
       if(method == "allele") {
 
         # Remove founders with too much missing data.
-        remove = which(rowSums(founders$geno == "N") > 5000)
+        remove = which(rowSums(founders$geno == "N") > 14000)
         if(length(remove) > 0) {
           founders$geno = founders$geno[-remove,]
           founders$sex  = founders$sex[-remove]
           founders$code = founders$code[-remove]
         } # if(length(remove) > 0)
 
-        founders = list(geno = t(founders$geno[rownames(founders$geno) %in% snps[,1],]),
+        founders = list(geno = founders$geno[,colnames(founders$geno) %in% snps[,1]],
                         sex = founders$sex, code = founders$code,
                         states = create.genotype.states(LETTERS[1:8]),
-                        direction = founders$direction)
+                        direction = mut.founders$direction)
         keep = which(!is.na(founders$code))
         founders$geno = founders$geno[keep,]
         founders$sex  = founders$sex[keep]
         founders$code = founders$code[keep]
 
         # Add the mutant founders to the founders.
+		mut.founders$geno = mut.founders$geno[,colnames(founders$geno)]
         founders$geno = rbind(mut.founders$geno, founders$geno)
 
       ### Intensity ###
@@ -356,8 +364,18 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
              "help(calc.genoprob) for more information."))
       } # else
 
-      founders = list(x = founders$x, y = founders$y, sex = founders$sex, 
-                      code = founders$code, states = states, direction = mut.founders$direction)
+	  if(method == "allele") {
+	  
+	    founders = list(geno = founders$geno, sex = founders$sex, code = founders$code, 
+	               states = states, direction = mut.founders$direction)
+
+	  } else if(method == "intensity") {
+	  
+        founders = list(x = founders$x, y = founders$y, sex = founders$sex, 
+                        code = founders$code, states = states, direction = mut.founders$direction)
+						
+      } # else if()
+	  
       attr(founders, "method") = method
 
   } else if(sampletype == "HS") {
