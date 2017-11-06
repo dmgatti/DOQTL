@@ -24,18 +24,18 @@ emission.probs.allele = function(founders, chr, snps, sex = c("F", "M")) {
          "in geno. Please verify that the SNP IDs are identical."))
   } # if(any(snps[,1] != colnames(founders$geno)))
 
-  # Convert genotypes to numeric values (0 = A, 1 = H, 2 = B, 3 = N)
   chr = as.character(chr[1])
-#  geno = convert.allele.calls(as.matrix(founders$geno))
-  symbols = sort(unique(as.vector(founders$geno)))
-  print(paste("Found", length(symbols), "alleles"))
   retval = NULL
 
   # Autosomes.
   if(!is.na(as.numeric(chr))) {
 
+    symbols = sort(unique(as.vector(founders$geno)))
+
+    print(paste("Found", length(symbols), "alleles"))
     print(paste("Found", nrow(snps), "SNPs on Chr", chr))
     print(paste("Found", length(founders$states), "genotype states."))
+
     retval = tabulate.geno(geno = founders$geno, founders = founders,
              symbols = symbols)
 
@@ -43,24 +43,39 @@ emission.probs.allele = function(founders, chr, snps, sex = c("F", "M")) {
 
     sex = match.arg(sex)
     sample.subset = which(founders$sex == sex)
+
+    symbols = sort(unique(as.vector(founders$geno[sample.subset,])))
+    print(paste("Found", length(symbols), "alleles"))
+
     print(paste("Found", nrow(snps), "SNPs on Chr", chr))
     print(paste("Found", length(founders$states), "genotype states."))
+
     if(sex == "F") {
+
       retval = tabulate.geno(geno = founders$geno[sample.subset,], founders = founders,
                symbols = symbols)
+
     } else if (sex == "M") {
+
+      # We pass in homozygous states instead of hemizygous states.
       founders$states = paste(founders$states, founders$states, sep = "")
       retval = tabulate.geno(geno = founders$geno[sample.subset,], founders = founders,
                symbols = symbols)
+
     } else {
+
       stop("emission.probs.allele: Unknown sex.")
+
     } # else
 
   } else if(chr == "Y") {
 
     print("Male Y Chr...")
+
     male = which(founders$sex == "M")
+
     print(paste("Found", length(founders$states), "genotype states."))
+
     founders$states = paste(founders$states, founders$states, sep = "")
     retval = tabulate.geno(geno = founders$geno[male,], founders = founders, 
              symbols = symbols)

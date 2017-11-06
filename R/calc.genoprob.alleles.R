@@ -96,7 +96,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
       # Only run if there are samples that are male.  If only founders are
       # male, there's no point in running this.
       if(length(males) > 0) {
-	  
+
         print("Males")
         cur.data = list(geno = data$geno[males,], 
                    sex = data$sex[males], gen = data$gen[males])
@@ -107,6 +107,9 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
                        code = founders$code[founder.subset],
                        states = founders$states$X$M)
         cur.founders = keep.homozygotes(cur.founders)
+
+        # NOTE: We treat male hemizygous mice as homozygous adn we allow a
+        # het state everywhere.
         tmp = hmm.allele(data = cur.data, founders = cur.founders,
               sex = "M", snps = cur.snps, chr = curr.chr, 
               trans.prob.fxn = trans.prob.fxn)
