@@ -25,6 +25,8 @@
 }
 \author{ Daniel Gatti }
 \examples{
+  \dontrun{
   data(example.snps)
   snp.type = categorize.variants(variants = example.snps[1:50,])
+  }
 }

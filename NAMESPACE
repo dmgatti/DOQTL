@@ -23,7 +23,16 @@ import( annotate,
         XML )
 
 importFrom(mclust, Mclust, mclustBIC, priorControl)
-
+importFrom("grDevices", "colorRampPalette", "dev.off", "gray", "grey",
+             "png", "rgb")
+importFrom("graphics", "abline", "axis", "barplot", "box", "layout",
+             "legend", "lines", "mtext", "par", "plot", "points", "rect",
+             "strheight", "strwidth", "text", "title")
+importFrom("stats", "aggregate", "approx", "as.dendrogram", "as.dist",
+             "hclust", "lm", "pchisq", "predict", "princomp", "qnorm",
+             "rexp", "rnorm", "runif")
+importFrom("utils", "read.delim", "write.csv", "write.table")
+  
 export("add.missing.F1s",
        "add.slash",
        "addLog",
