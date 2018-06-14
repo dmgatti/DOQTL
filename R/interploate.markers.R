@@ -30,17 +30,13 @@ interpolate.markers = function(data, from, to) {
   if(!is.numeric(data)) {
     stop(paste("\'data\' must be a numeric matrix."))
   } # if(!is.numeric(data))
-  # Set both marker grids to Mb.
-  if(max(from[,3]) > 200) {
-    from[,3] = from[,3] * 1e-6
-  } # if(max(from[,3]) > 200)
-  if(max(to[,3]) > 200) {
-    to[,3] = to[,3] * 1e-6
-  } # if(max(to[,3]) > 200)
-  
-  # We need this to get rid of factors.
-  to[,1] = as.character(to[,1])
-  from[,1] = as.character(from[,1])
+  # Figure out which marker set has higher density.
+  higher = from
+  lower = to
+  if(nrow(to) > nrow(from)) {
+    higher = to
+    lower  = from
+  } # if(nrow(to) > nrow(from))
   # Impute the values by chromosome. Use the chromosomes in the smaller set.
   chr = intersect(unique(from[,2]), unique(to[,2]))
   from = from[from[,2] %in% chr,]

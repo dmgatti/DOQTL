@@ -33,24 +33,19 @@ get.do.states = function() {
   states = sort(states[upper.tri(states, diag = TRUE)])
   states
 } # get.do.states()
-
 #############################################################################
 # Get the mouse chromosome lengths.
 get.chr.lengths = function(genome = "mm10") {
-
   genome.prefix = substring(genome, 1, 2)
   if(genome.prefix != "mm" & genome.prefix != "rn") {
     stop(paste("get.chr.lengths: Unrecognized genome:", genome, ".\nDOQTL",
          "currently support the mouse and rat genomes (i.e. mm10 or rn6)"))
   } # if(genome.prefix != "mm" & genome.prefix != "rn")
-
   species = "Mmusculus"
   if(genome.prefix == "rn") {
     species = "Rnorvegicus"
   } # if(substring(genome, 1, 2) == "rn")
-
   genome = get(paste0("BSgenome.", species, ".UCSC.", genome))
-
   chrlen = seqlengths(genome)
   chrlen = chrlen[-grep("random|Un", names(chrlen))]
   names(chrlen) = sub("chr", "", names(chrlen))
@@ -61,7 +56,6 @@ get.chr.lengths = function(genome = "mm10") {
   options(warn = old.warn)
   chrlen = chrlen[c(autosomes, "X", "Y", "M")]
   chrlen = chrlen * 1e-6
-
   return(chrlen)
   
 } # get.chr.lengths()

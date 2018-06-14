@@ -5,8 +5,6 @@
 # May 19, 2016
 ################################################################################
 get.missense.snps = function(vcf) {
-
   csq = info(vcf)$CSQ
   
-
 } # get.missense.snps()

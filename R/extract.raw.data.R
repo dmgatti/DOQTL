@@ -11,9 +11,7 @@
 ################################################################################
 extract.raw.data = function(in.path = ".", prefix, out.path = ".", 
                    array = c("gigamuga", "megamuga", "muga")) {
-
   array = match.arg(array)
-
   if(!missing(prefix)) {
     if(length(in.path) != length(prefix)) {
       stop(paste("extract.raw.data: The 'in.path' and 'prefix' matrices must",
@@ -21,7 +19,6 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
            "data set in in.path."))
     } # if(length(in.path) != length(prefix))
   } # if(!missing(prefix))
-
   tmp = sub("/$", "", in.path)
   if(!all(file.exists(tmp))) {
     stop(paste("extract.raw.data: Some of the in.path directories do not exist.",
@@ -45,7 +42,6 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     load(url("ftp://ftp.jax.org/MUGA/GM_snps.Rdata"))
     snps = GM_snps
    } # else
-
   # Write out headers for the files.  This will overwrite existing files.
   x_file = file(paste(out.path, "x.txt", sep = "/"), open = "w")
   y_file = file(paste(out.path, "y.txt", sep = "/"), open = "w")
@@ -56,40 +52,32 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   writeLines(text = snps[length(snps[,1]),1],  con = y_file, sep = "\n")
   writeLines(text = snps[-length(snps[,1]),1], con = g_file, sep = "\t")
   writeLines(text = snps[length(snps[,1]),1],  con = g_file, sep = "\n")
-
   call.rate.batch = NULL
   for(i in 1:length(in.path)) {
-
     # Get the sample IDs from the Sample_Map.txt file.
     samplefile = dir(path = in.path[i], pattern = "Sample_Map.txt", full.names = TRUE)
-
     # If not found, then quit.
     if(length(samplefile) == 0) {
       stop(paste("No file called 'Sample_Map.txt' was found in directory",
            in.path[i], ".  Please make sure that the Sample_Map file is unzipped and",
            "in the specified directory."))
     } # if(length(samplefile) == 0)
-
     samples = read.delim(samplefile, stringsAsFactors = FALSE)$Name
     samples = samples[nchar(samples) > 0]
-
     # Find a file with "FinalReport" in the filename.
     rawfile = dir(path = in.path[i], pattern = "FinalReport", full.names = TRUE)
     rawfile = rawfile[grep("txt", rawfile)]
-
     # If not found, then quit.
     if(length(rawfile) == 0) {
       stop(paste("No file with 'FinalReport' in the filename was found in directory",
            in.path[i], ".  Please make sure that the FinalReport file is unzipped and",
            "in the specified directory."))
     } # if(length(rawfile) == 0)
-
     # If there is more than one FinalReport file, then quit.
     if(length(rawfile) > 1) {
       stop(paste("There is more than one file with FinalReport in the filename.",
            "Please place only one data set in each directory."))
     } # if(length(rawfile) > 1)
-
     # Read in the first sample.  The current format requires us to skip 9 lines
     # because there is no comment delimiter at the top of the file.
     print(paste("Reading", rawfile, "..."))
@@ -97,7 +85,6 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     data = readLines(con = rawfile, n = 10)
     hdr = strsplit(data, split = "\t")
     cn = hdr[[10]]
-
     # Verify that we have all of the column names that we expect.
     column.names = c("SNP Name", "Sample ID", "X", "Y", "Allele1 - Forward",
                      "Allele2 - Forward")
@@ -109,7 +96,6 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
     } # if(any(is.na(columns)))
     cr = rep(0, length(samples))
     samples.in.data = rep("", length(samples))
-
     # We read the files in and write them out to conserve memory. As computers
     # get larger, we may be able to keep everything in memory.
     for(j in 1:length(samples)) {
@@ -163,5 +149,4 @@ extract.raw.data = function(in.path = ".", prefix, out.path = ".",
   colnames(call.rate.batch) = c("sample", "call.rate", "batch")
   write.table(call.rate.batch, paste(out.path, "call.rate.batch.txt", sep = "/"),
               sep = "\t", row.names = FALSE)
-
 } # extract.raw.data()

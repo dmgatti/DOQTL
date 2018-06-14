@@ -32,7 +32,6 @@
   sdps: Numeric matrix containing the unique strain distribution patterns in the founder strains.
   map:  Numeric vector indicating the index of the SNP at which each SDP occurs with the current pair of markers.
   snps: Data.frame containing SNP names, positions, reference and alternate alleles.
-
   NOTE: We assume (incorrectly) that all SNPs are bimorphic. SNPs are coded as 0 for "equal to reference" and 1 for "not equal to reference".
 }
 \value{

@@ -5,14 +5,11 @@
 #                   the names of the qtl in the current working directory and plot
 #                   the merge plots. If false (default), do not plot merge analysis.
 html.report = function(path, qtl, perms, assoc = FALSE) {
-
   if(missing(qtl)) {
     stop(paste("html.report: qtl argument cannot be missing. Please supply a list",
 	     "with each element containing a list with lrs and coef."))
   } # if(missing(qtl))
-
   sig.qtl = NULL
-
   # Create the individual QTL pages for each phenotype.
   print("Creating Individual QTL pages...")
   for(i in 1:length(qtl)) {
@@ -25,7 +22,6 @@ html.report = function(path, qtl, perms, assoc = FALSE) {
       sig.qtl = rbind(sig.qtl, c(names(qtl)[i], "No", "signficant", "QTL", rep("", 6)))
     } # else
   } # for(i)
-
   # Make the main page with a summary table.
   print("Creating main QTL page...")
   p = openPage("index.html")
@@ -34,24 +30,17 @@ html.report = function(path, qtl, perms, assoc = FALSE) {
   write.csv(sig.qtl, "sig.qtl.csv")
   hwrite("QTL Summary File", p, br = TRUE, center = TRUE, link = "sig.qtl.csv")
   tmp = make.names(sig.qtl[,1])
-
   for(i in 1:nrow(sig.qtl)) {
     sig.qtl[i,1] = hwrite(sig.qtl[i,1], link = paste(tmp[i], "/", tmp[i],
                    ".QTL.html", sep = ""))
   } # for(i)
-
   hwrite(sig.qtl, p, br = TRUE, row.bgcolor = "#aaaaaa")
-
   closePage(p)
-
 } # html.report()
-
-
 ##########################################################
 # Function to create a QTL results page for one phenotype.
 # Returns a data.frame with the significant QTL.
 create.html.page = function(path, qtl, pheno.name, perms, assoc) {
-
   curr.name = make.names(pheno.name)
   dir.create(paste(path, "/", curr.name, sep = ""))
   curr.path = paste(path, "/", curr.name, "/", sep = "")

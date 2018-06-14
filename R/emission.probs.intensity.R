@@ -7,7 +7,6 @@
 #            r.t.covars:
 ################################################################################
 emission.probs.intensity = function(data, params) {
-
   # Create a large vector to pass down to C.
   retval = array(0, c(dim(params$r.t.means)[1], nrow(data$theta),
                  dim(params$r.t.means)[3]), dimnames = 
@@ -29,19 +28,14 @@ emission.probs.intensity = function(data, params) {
            thetavars = as.double(params$r.t.covars[,1,]),
            rhovars   = as.double(params$r.t.covars[,2,]),
            prob = as.double(retval))
-
   # Create the 3D array of emission probabilities.
   retval = array(res$prob, c(dim(params$r.t.means)[1], nrow(data$theta),
            dim(params$r.t.means)[3]), dimnames = 
            list(dimnames(params$r.t.means)[[1]], rownames(data$theta),
            dimnames(params$r.t.means)[[3]]))
   return(retval)
-
 } # emission.probs.intensity()
-
-
 emission.probs.intensity2 = function(data, params) {
-
   # Create a large vector to pass down to C.
   retval = array(0, c(dim(params$x.y.means)[1], nrow(data$x),
                  dim(params$x.y.means)[3]), dimnames = 
@@ -53,7 +47,6 @@ emission.probs.intensity2 = function(data, params) {
   x[is.na(data$x)] = -100.0
   y = data$y
   y[is.na(data$y)] = -100.0
-
   res = .C(C_emission_prob2,
            dims = as.integer(dim(retval)),
            x = as.double(x),
@@ -64,15 +57,12 @@ emission.probs.intensity2 = function(data, params) {
            yvars  = as.double(params$x.y.covars[,2,]),
            covars = as.double(params$x.y.covars[,3,]),
            probs  = as.double(retval))
-
   # Set -Inf values to a the minimum double value.
   res$probs[is.infinite(res$probs)] = -.Machine$double.xmin
-
   # Create the 3D array of emission probabilities.
   retval = array(res$prob, c(dim(params$x.y.means)[1], nrow(data$x),
            dim(params$x.y.means)[3]), dimnames = 
            list(dimnames(params$x.y.means)[[1]], rownames(data$x),
            dimnames(params$x.y.means)[[3]]))
   return(retval)
-
 } # emission.probs.intensity2()

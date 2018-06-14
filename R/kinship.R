@@ -8,7 +8,6 @@
 # Arguments: geno: character matrix containing allele calls for each sample and
 #                  marker. num.snps x num.samples
 kinship.alleles = function(geno) {
-
   K = matrix(0, ncol(geno), ncol(geno), dimnames = list(colnames(geno),
       colnames(geno)))
 	  
@@ -19,9 +18,6 @@ kinship.alleles = function(geno) {
   return(K)
   
 } # kinship.alleles()
-
-
-
 # This function takes the 8 state founder probabilities and calculates
 # the cosine of the angle between each sample.
 # Arguments: probs: 3D array containing founder haplotype contributions.
@@ -32,7 +28,6 @@ kinship.alleles = function(geno) {
 #            bychr: boolean that indicates if a separate kinship 
 #                   matrix should be made for each chromosome.
 kinship.probs = function(probs, snps, bychr = FALSE) {
-
   K = NULL
   
   if(bychr) {
@@ -102,6 +97,3 @@ kinship.probs = function(probs, snps, bychr = FALSE) {
   return(K)
   
 } # kinship.probs()
-
-
-

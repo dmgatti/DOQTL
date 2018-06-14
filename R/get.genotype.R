@@ -13,31 +13,25 @@
 #            markers: The location of the markers in probs.
 #            probs: 3D array containing the haplotype probabilities.
 get.genotype = function(chr, pos, snp, markers, probs) {
-
   # See if the position is in bp or Mb.
   if(pos < 200) {
     pos = pos * 1e6
   } # if(pos < 200)
-
   # Convert the SNP to numbers.
   snp = unlist(snp)
   names(snp) = make.names(sub("_", ".", names(snp)))
   strains = make.names(do.colors[,2])
   snp = snp[strains]
   snp = as.numeric(factor(snp)) - 1
-
   # Get the slices from the haplotype probs matrix.
   markers = markers[markers[,1] %in% dimnames(probs)[[3]],]
   probs = probs[,,dimnames(probs)[[3]] %in% markers[,1]]
   markers = markers[markers[,2] == chr,]
   probs = probs[,,markers[,1]]
   markers = markers[max(which(markers[,3] < pos * 1e-6), 1):min(which(markers[,3] > pos * 1e-6)),]
-
   # Get the probs for these markers.
   probs = probs[,,markers[,1], drop = FALSE]
   probs = apply(probs, 1:2, mean)
-
   # Multiply the two matrices and return the result.
   return(probs %*% snp)
-
 } # get.genotype()

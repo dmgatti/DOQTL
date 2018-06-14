@@ -1,9 +1,7 @@
 get.max.geno = function(probs) {
-
   max.geno = matrix("", nrow(probs), dim(probs)[[3]], dimnames = 
              list(rownames(probs), dimnames(probs)[[3]]))
   founders = dimnames(probs)[[2]]
-
   if(dim(probs)[3] == 1) {
   
     mxp  = apply(probs[,,1], 1, max)
@@ -19,7 +17,6 @@ get.max.geno = function(probs) {
     let[2,] = founders[rnk[2,]]
     let = apply(let, 2, sort)
     max.geno[het,1] = paste(let[1,], let[2,], sep = "")
-
   } else {
   
     # Loop through each sample.
@@ -45,7 +42,6 @@ get.max.geno = function(probs) {
       } # if(length(het) > 0)
     
     } # for(s)
-
   } # else
   
   return(max.geno)

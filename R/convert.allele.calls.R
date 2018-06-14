@@ -9,9 +9,7 @@
 # April 8, 2013
 ################################################################################
 convert.allele.calls = function(geno1, geno2) {
-
   geno = rbind(geno1, geno2)
-
   # Get the number of alleles at each SNP.
   tbl = apply(geno, 2, unique)
   tbl = lapply(tbl, function(a) { a[a != "H" & a != "N"] })
@@ -38,7 +36,5 @@ convert.allele.calls = function(geno1, geno2) {
   # Replace hets and no calls.
   g2[geno == "H"] = 1
   g2[geno == "N"] = 3
-
   return(list(g2[1:nrow(geno1),], g2[(nrow(geno1)+1):nrow(g2),]))
-
 } # convert.allele.calls()

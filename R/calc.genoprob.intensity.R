@@ -17,20 +17,15 @@
 #                  chromosome as the model progresses.
 calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                           trans.prob.fxn, plot = FALSE, clust = c("mclust", "pamk")) {
-
   clust = match.arg(clust)
   
   # Extract the sample and founder temporary data file names.
   tmpfiles = list(dx = data$x, dy = data$y, fx = founders$x, fy = founders$y)
-
   # Loop through each chromosome.
   for(curr.chr in chr) {
-
     print(paste("CHR", curr.chr))
-
     # Get SNPs for the current chromosome.
     cur.snps = snps[[which(names(snps) == curr.chr)]]
-
     # Read in the sample and founder data.
     d = NULL # d is the variable that is loaded in the load() statements below.
     chr.pattern = paste("chr", curr.chr, "\\.", sep = "")
@@ -44,34 +39,27 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
     founders$y = d
     rm(d)
     gc()
-
     # Normalize the samples and founders.
     # MegaMUGA founders seem to be well aligned to the data, so we're
     # not normalizing MegaMUGA data at the moment.
     if(attr(data, "array") == "muga") {
-
       newxy = quantilenorm(x1 = data$x, y1 = data$y, x2 = founders$x,
               y2 = founders$y)
       founders$x = newxy[[1]]
       founders$y = newxy[[2]]
       rm(newxy)
-
     } # if(attr(data, "array") != "muga")
     gc()
-
     # If this is the X chromosome, split the samples by sex, using 36 states
     # for the females and 8 states for the males.
     if(curr.chr == "X") {
-
       # Run the females first.
       females = which(data$sex == "F")
       female.prsmth = NULL
       female.r.t.means  = NULL
       female.r.t.covars = NULL
-
       # Only run if there are samples that are female.
       if(length(females) > 0) {
-
         print("Females")
         data$theta = (2.0 / pi) * atan2(data$y, data$x)
         data$rho = sqrt(data$x^2 + data$y^2)
@@ -95,20 +83,15 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
         female.r.t.covars = tmp$params$r.t.covars
         female.prsmth = tmp$prsmth
         rm(tmp)
-
       } # if(length(females) > 0)
-
       males = which(data$sex == "M")
       male.prsmth = NULL
       male.r.t.means  = NULL
       male.r.t.covars = NULL
-
       # Only run if there are samples that are male.  If only founders are
       # male, there's no point in running this.
       if(length(males) > 0) {
-
         print("Males")
-
         cur.data = list(theta = (2.0 / pi) * atan2(data$y[males,], 
                    data$x[males,]), rho = sqrt(data$x[males,]^2 + 
                    data$y[males,]^2), sex = data$sex[males],
@@ -123,16 +106,13 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                        code = founders$code[founder.subset],
                        states = founders$states$X$M)
         cur.founders = keep.homozygotes(cur.founders)
-
         tmp = hmm.intensity(data = cur.data, founders = cur.founders,
               sex = "M", snps = cur.snps, chr = curr.chr,
               trans.prob.fxn = trans.prob.fxn, clust = clust)
-
         male.r.t.means  = tmp$params$r.t.means
         male.r.t.covars = tmp$params$r.t.covars
         male.prsmth = tmp$prsmth
         rm(tmp)
-
       } # if(length(males) > 0)
 	  
       # Combine the male and female prsmth data.
@@ -165,7 +145,6 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                       output.dir = output.dir, chr = curr.chr, all.chr = chr,
                       sex = "F")
       } # if(!is.null(female.r.t.means))
-
       if(!is.null(male.r.t.means)) {
         # We don't want to pass prsmth in twice or else it will be written
         # out twice.
@@ -173,33 +152,25 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                       male.r.t.covars, output.dir = output.dir, chr = curr.chr, 
                       all.chr = chr, sex = "M")
       } # if(!is.null(male.r.t.means))
-
     } else if (curr.chr == "Y") {
-
       stop("Chr Y not implemented yet.")
-
 ### DMG: NOT IMPLEMENTED YET.
-
       # Keep only the males.
       males = which(data$sex == "M")
       founder.males = which(founders$sex == "M")
-
       # Get founder centers.
       fx = founders$x[founder.males,]
       fy = founders$y[founder.males,]
       fx = aggregate(fx, list(founders$code[founder.males]), mean)
       fy = aggregate(fy, list(founders$code[founder.males]), mean)
-
       # Get distances between founders and samples.
       x = t(rbind(founders$x[founder.males,], data$x[males,]))
       y = t(rbind(founders$y[founder.males,], data$y[males,]))
-
       d = matrix(0, ncol(x), ncol(x), dimnames = list(colnames(x), colnames(x)))
       for(i in 1:ncol(x)) {
         d[i,] = sqrt(colSums((x[,i] - x)^2) + colSums((y[,i] - y)^2))
       } # for(i)
       d = d[!is.na(d[1,]), !is.na(d[,1])]
-
       # Cluster using CLARA.
 #      cl = pamk(x = d, usepam = FALSE)
   
@@ -213,13 +184,9 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
 #      } # for(i)
       
       
-
     } else if (curr.chr == "M") {
-
       stop("Chr M not implemented yet.")
-
     } else {
-
       # Autosomes.
       data$theta = (2.0 / pi) * atan2(data$y, data$x)
       data$rho = sqrt(data$x^2 + data$y^2)
@@ -227,12 +194,10 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
       founders$rho = sqrt(founders$x^2 + founders$y^2)
       old.states = founders$states
       founders$states = founders$states$auto
-
       hmm = hmm.intensity(data = data, founders = founders,
             sex = "F", snps = cur.snps, chr = curr.chr,
             trans.prob.fxn = trans.prob.fxn, clust = clust)
       founders$states = old.states
-
       # Write out the smoothed probabilities and the founder state means and 
       # variances.
       write.results(prsmth = hmm$prsmth, 
@@ -240,12 +205,9 @@ calc.genoprob.intensity = function(data, chr, founders, snps, output.dir = ".",
                     theta.rho.covars = hmm$params$r.t.covars, 
                     output.dir = output.dir, chr = curr.chr, all.chr = chr)
     } # else
-
     # Clean up memory.
     gc()
     # Make sure the foreach doesn't try to return something.
     NULL
-
   } # for(chr)
-
 } # calc.genoprob.intensity()

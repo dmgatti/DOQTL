@@ -10,7 +10,6 @@
 #            keywords: character vector containing words to search for in 
 #                      articles involving each of the gene in gene.symbols.
 query.pubmed = function(gene.symbols, keywords) {
-
   # Convert gene symbols to EntrezGene IDs.
   mouse.entrez = mget(gene.symbols, org.Mm.egSYMBOL2EG, ifnotfound = NA)
   mouse.entrez = lapply(mouse.entrez, function(z) { z[!is.na(z)] })
@@ -44,21 +43,17 @@ query.pubmed = function(gene.symbols, keywords) {
   names(results) = gene.symbols
   
   for(g in 1:length(gene.symbols)) {
-
     message(gene.symbols[g])
     results[[g]] = vector(mode = "list", length = length(keywords))
     names(results[[g]]) = keywords
     results[[g]] = lapply(results[[g]], as.list)
-
     if(length(pmid[[g]]) > 0) {
-
       x = pubmed(pmid[[g]])
       a = xmlRoot(x)
       num.art = length(xmlChildren(a))
  
       art.list = vector("list", length = num.art)
       for(i in 1:num.art) {
-
         art.list[[i]] = buildPubMedAbst(a[[i]])
         found = sapply(keywords, grep, x = abstText(art.list[[i]]))
         found = which(sapply(found, length) > 0)
@@ -67,10 +62,8 @@ query.pubmed = function(gene.symbols, keywords) {
             results[[g]][[found[k]]] = c(results[[g]][[found[k]]], art.list[[i]])
           } # for(k)
         } # if(length(found) > 0)
-
       } # for(i)
     } # if(length(pmid[[g]]) > 0)
-
   } # for(g)
   
   return(results)

@@ -31,24 +31,18 @@
 #          1. SNPs & LRS for the genotype at each SNP.
 #          2. 3D array of coefficients for the full model at each SNP.
 qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
-
   if(!is.matrix(pheno)) {
     pheno = as.matrix(pheno)
   } # if(!is.matrix(pheno))
-
   # Number of samples.
   n = nrow(pheno)
-
   # Number of SNPs.
   m = dim(probs)[3]
-
   # Number of phenotypes.
   ph = ncol(pheno)
   num.covar = 0
   null.var = NULL
-
   if(!is.null(addcovar)) {
-
     # Number of covariates.
     num.covar = ncol(addcovar)
     # Create the covariates matrix. 
@@ -56,27 +50,21 @@ qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
     # Get the residual variance for the null model with just the fixed
     # covariates.
     null.var = 1.0 / diag(crossprod(qr.resid(qr(addcovar[,1:(num.covar + 1)]), pheno)))
-
   } else {
-
     # Create the covariates matrix. 
     addcovar = as.matrix(cbind(Intercept = rep(1, n), probs[,,1]))    
     # Get the residual variance for the null model with just the fixed
     # covariates.
     null.var = 1.0 / diag(crossprod(qr.resid(qr(addcovar[,1]), pheno)))
-
   } # else
-
   # Calculate the residual variances of the full model at each SNP.
   lrs = matrix(0, m, ph, dimnames = list(dimnames(probs)[[3]], colnames(pheno)))
   coef = array(0, c(m, ncol(addcovar), ph), dimnames = list(snps[,1], 
          colnames(addcovar), colnames(pheno)))
-
   # Find the SNPs with low MAF.
   maf = apply(apply(probs, 2, colSums), 1, min)
   run.pseudo = which(maf < 0.5)
   run.qr = which(maf >= 0.5)
-
   # First run the SNPs where we can use the QR decomposition.
   # The range of columns that contain the genotypes.
   rng = (ncol(addcovar) - dim(probs)[2] + 1):ncol(addcovar)
@@ -86,7 +74,6 @@ qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
     lrs[s,] = colSums(qr.resid(qrx, pheno)^2)
     coef[s,,] = qr.coef(qrx, pheno)
   } # for(s)
-
   # Then run the SNPs where one of the allele frequencies is too low and
   # we need to use the pseudo-inverse to solve the regression.
   for(s in run.pseudo) {
@@ -95,16 +82,11 @@ qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
     lrs[s,] = colSums((pheno - addcovar %*% beta)^2)
     coef[s,,] = beta
   } # for(s)
-
   lrs = -n * log(lrs * matrix(null.var, nrow(lrs), ncol(lrs), byrow = TRUE))
   p = pchisq(q = lrs, df = dim(probs)[[2]] - 1, lower.tail = FALSE)
-
   return(list(lrs = cbind(snps, lrs = lrs, lod = lrs / (2 * log(10)), p = p,
          neg.log10.p = -log(p, 10)), coef = coef))
-
 } # qtl.LRS()
-
-
 ################################################################################
 # Run permutations on the phenotypes to assess statistical significance of
 # the QTL peaks.  Run all phenotypes together.  Be careful with this script.
@@ -126,83 +108,64 @@ qtl.LRS = function(pheno, probs, snps, addcovar = NULL) {
 #                        indicating the type of return statistic.
 permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
                        return.val = c("lod", "p")) {
-
   return.val = match.arg(return.val)
   
   if(!is.matrix(pheno)) {
     pheno = as.matrix(pheno)
   } # if(!is.matrix(pheno))
-
   # Number of samples.
   n = nrow(pheno)
-
   # Number of SNPs.
   m = dim(probs)[3]
-
   # Number of phenotypes.
   ph = ncol(pheno)
-
   # Create the covariates matrix.
   null.var = NULL
   if(missing(addcovar)) {
-
     addcovar = as.matrix(cbind(Intercept = rep(1, n)))
     null.var = 1.0 / diag(crossprod(qr.resid(qr(addcovar[,1]), pheno)))
     addcovar = as.matrix(cbind(Intercept = rep(1, n), probs[,,1]))
     num.addcovar = 1
-
   } else {
-
     addcovar = as.matrix(addcovar)
     num.addcovar = ncol(addcovar)
     addcovar = as.matrix(cbind(Intercept = rep(1, n), addcovar))
     null.var = 1.0 / diag(crossprod(qr.resid(qr(addcovar[,1:(num.addcovar+1)]),
                           pheno)))
     addcovar = as.matrix(cbind(addcovar, probs[,,1]))
-
   } # else
-
   # Save the maximum LRS from each permutation.
   max.lrs = matrix(0, nperm, ph, dimnames = list(1:nperm, colnames(pheno)))
   lrs = matrix(0, m, ph, dimnames = list(dimnames(probs)[[3]], colnames(pheno)))
-
   # Get the sex of the samples.
   sex.col = grep("sex", colnames(addcovar), ignore.case = TRUE)
   sex = as.numeric(factor(addcovar[,sex.col])) - 1
   females = which(sex == 0)
   males   = which(sex == 1)
-
   # The range of columns that contain the genotypes.
   rng = (ncol(addcovar) - dim(probs)[2] + 1):ncol(addcovar)
-
   # Decide when to use QR or the pseudoinverse.
   rnk = rep(0, m)
   for(s in 1:m) {
     addcovar[,rng] = probs[,,s]
     rnk[s] = rank.condition(addcovar)$rank
   } # for(s)
-
   run.pseudo = which(rnk < ncol(addcovar))
   run.qr = which(rnk == ncol(addcovar))
-
   for(p in 1:nperm) {
-
     print(paste(p, "of", nperm))
-
     # Permute the phenotypes and fixed covariates.
     new.order = rep(0, nrow(pheno))
     new.order[females] = sample(females)
     new.order[males]   = sample(males)
     pheno = as.matrix(pheno[new.order,,drop = FALSE])
     addcovar = addcovar[new.order,,drop = FALSE]
-
     # First run the SNPs where we can use the QR decomposition.
     # The range of columns that contain the genotypes.
     for(s in run.qr) {
       addcovar[,rng] = probs[,,s]
       lrs[s,] = colSums(qr.resid(qr(addcovar), pheno)^2)
     } # for(s)
-
     # Then run the SNPs where one of the allele frequencies is too low and
     # we need to use the pseudo-inverse to solve the regression.
     for(s in run.pseudo) {
@@ -214,18 +177,11 @@ permutations.qtl.LRS = function(pheno, probs, snps, addcovar, nperm = 1000,
     # Note that we get the minimum residual variance to obtain the
     # minimum LRS.
     max.lrs[p,] = apply(lrs[,,drop = FALSE], 2, min)
-
   } # for(p)
-
   max.lrs = -n * log(max.lrs * matrix(null.var, nrow(max.lrs), 
              ncol(max.lrs), byrow = TRUE))
-
   if(return.val == "p") {
-
     max.lrs = pchisq(q = max.lrs, df = dim(probs)[[2]] - 1, lower.tail = FALSE)
-
   } # else
-
   return(max.lrs)
-
 } # permutations.qtl.LRS()

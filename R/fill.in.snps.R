@@ -6,7 +6,6 @@
 # snps: data.frame with 4 columns. Column 1: SNP IDs, column 2: chr,
 #          column 3: Mb position, column 4: cM position.
 fill.in.snps = function(snps) {
-
   # Order the SNPs.
   num.auto = max(as.numeric(snps[,2]), na.rm = TRUE)
   snps[snps[,2] == "X",2] = num.auto + 1
@@ -20,7 +19,6 @@ fill.in.snps = function(snps) {
   zero = c(0, diff(zero))
   start = which(zero ==  1)
   end   = which(zero == -1)
-
   if(snps[1,4] == snps[2,4]) {
     start = c(1, start)
   } # if(snps[1,4] == snps[2,4])

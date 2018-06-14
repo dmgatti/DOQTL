@@ -11,7 +11,6 @@
 # Returns: Character vector with sex assignments based on linear discriminant
 #          analysis.
 sex.predict = function(x, y, snps, plot = FALSE) {
-
   if(all(snps[,2] != "X")) {
     stop(paste("There are no X chromosome SNPs in snps. X and Y chromosome",
         "SNPs are required to predict sex."))
@@ -20,7 +19,6 @@ sex.predict = function(x, y, snps, plot = FALSE) {
     stop(paste("There are no Y chromosome SNPs in snps. X and Y chromosome",
         "SNPs are required to predict sex."))
   }
-
   # Convert X and Y to matrices, if needed.
   if(!is.matrix(x)) {
     x = as.matrix(x)
@@ -28,19 +26,16 @@ sex.predict = function(x, y, snps, plot = FALSE) {
   if(!is.matrix(y)) {
     y = as.matrix(y)
   } # if(!is.matrix(y))
-
   # Synch up the X & Y SNPs.
   x = x[,colnames(x) %in% snps[,1]]
   y = y[,colnames(y) %in% snps[,1]]
   snps = snps[match(colnames(x), snps[,1]),]
-
   # Keep the X and Y chromosome data.
   x.rng = which(snps[,2] == "X")
   x.int = rowMeans(x[,x.rng] + y[,x.rng], na.rm = TRUE)
   y.rng = which(snps[,2] == "Y")
   y.int = rowMeans(x[,y.rng] + y[,y.rng], na.rm = TRUE)
   keep = which(!(is.na(x.int) & is.na(y.int)))
-
   if(length(keep) < length(x.int)) {
     warning(paste("Removing", length(x.int) - length(keep),
             "samples with NaN intensity values."))

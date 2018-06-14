@@ -28,19 +28,15 @@ qtl.qtlrel = function(pheno, probs, K, addcovar, intcovar, snps) {
   if(max(snps[,3], na.rm = TRUE) > 200) {
     snps[,3] = snps[,3] * 1e-6
   } # if(max(snps[,3]) > 200)
-
   # Return value.
   retval = NULL
-
   prdat = list(pr = probs, chr = snps[,2], dist = snps[,3],
                snp = snps[,1])
   vTmp = list(AA = NULL, DD = NULL, HH = NULL, AD = NULL, MH = NULL,
               EE = diag(length(pheno)))
-
   if(!missing(K)) {
     vTmp$AA = 2 * K
   } # if(!missing(K))
-
   # This tells QTLRel to fit the additive model.
   class(prdat) = c(class(prdat), "addEff") 
   vc = NULL
@@ -60,16 +56,13 @@ qtl.qtlrel = function(pheno, probs, K, addcovar, intcovar, snps) {
             intcovar = intcovar, numGeno = TRUE, test = "None")
     } # else
   } # else
-
   # Convert the model coefficients to a matrix.
   coef = matrix(unlist(res$parameters), length(res$parameters),
          length(res$parameters[[1]]), dimnames = list(res$snp,
          names(res$parameters[[1]])), byrow = TRUE)
-
   # Return the LRS, LOD, p-value and -log10(p-value).
   p = pchisq(q = res$p, df = dim(probs)[[2]] - 1, lower.tail = FALSE)
   return(list(lod = cbind(snps[,1:4], perc.var = res$v, lrs = res$p,
            lod = res$p / (2 * log(10)), p = p,
            neg.log10.p = -log(p, 10)), coef = coef))
-
 } # qtl.qtlrel()

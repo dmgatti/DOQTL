@@ -3,14 +3,12 @@
 ################################################################################
 hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn, 
                          clust = c("mclust", "pamk")) {  
-
   clust = match.arg(clust)
   
   # Estimate the (theta, rho) genotype cluster means and variances.
   params = estimate.cluster.params(founders = founders, data = data, chr = chr,
                                   clust = clust)
   save(params, file = paste0("chr", chr, ".initial.cluster.params.Rdata"))
-
   # Set negative values to NA for this. They will be removed when we take the 
   # means.
   neg = which(founders$theta < 0)
@@ -18,14 +16,12 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
     founders$theta[neg] = NA
     founders$rho[neg]   = NA	
   } # if(length(neg) > 0)
-
   # We need to remove the founders that are not part of the possible 
   # states for the DO/F1 to work.
   founders$theta = founders$theta[founders$code %in% founders$states,]
   founders$rho   = founders$rho[founders$code   %in% founders$states,]
   founders$sex   = founders$sex[founders$code   %in% founders$states]
   founders$code  = founders$code[founders$code  %in% founders$states]
-
   # Now that we have estimated initial cluster parameters from the founder
   # data, condense the founders down to thier means.
   # For some reason, split and tapply don't work here.
@@ -46,7 +42,6 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
   data$rho[is.na(data$rho) | is.nan(data$rho)] = -1.0
   founders$theta[is.na(founders$theta) | is.nan(founders$theta)] = -1.0
   founders$rho[is.na(founders$rho) | is.nan(founders$rho)] = -1.0
-
   # Set low theta values to -1 because these tend to represent clusters
   # with low X and Y values that get spread out in the non-Euclidean rho/theta space.
   set.to.neg = which(data$theta < 0.05)
@@ -59,10 +54,8 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
   logLik = -.Machine$double.xmax
   init.hmm = initialize.hmm(snps = colnames(data$rho), samples = 
              rownames(data$rho), states = founders$states)
-
   # Estimate the initial emission probabilities.
   b = emission.probs.intensity(data = data, params = params)
-
   if(attr(data, "sampletype") %in% c("DO", "DOF1")) {
     # For DO samples, we have different transition probabilities for each
     # generation.
@@ -74,12 +67,9 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
     a = list(trans.prob.fxn(states = founders$states, snps = snps, chr = chr,
         sex = sex))
   } # else
-
   while(p <= maxIter & logLik - lastLogLik > epsilon) {
-
     print(date())
     print(p)
-
     # Optional plotting code to watch the HMM progress.
 #    if(TRUE) {
 #    layout(matrix(1:2, 1, 2))
@@ -88,15 +78,12 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
 #                      rho = data$rho, r.t.means = params$r.t.means, 
 #                      r.t.covars = params$r.t.covars)
 #    } # if(plot)
-
     # Initialize the log-likelihood to a large negative number.
     lastLogLik = logLik
-
     # Filter and smooth each generation separately because they each have a
     # different transition probability matrix.
     print("Filtering & smoothing...")
     lltmp = matrix(-.Machine$double.xmax, 1, 1)
-
     for(i in 1:length(a)) {
       # Filter
       gen = 1:nrow(data$theta)
@@ -117,16 +104,13 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
       init.hmm$prsmth[,gen,] = res$prsmth
       lltmp = addLog(lltmp, res$loglik)
     } # for(i)
-
     logLik = lltmp
     print(paste("LogLik =", logLik))
-
     # Set the epsilon to be 1/1000 of the starting value.
     # TBD: Is there a better way to set epsilon?
     if(p == 1) {
       epsilon = abs(logLik * 0.001)
     } # if(p == 1)
-
     # Update the parameters and state means and variances.
     print("update")
     params = parameter.update.intensity(data = data, params = params, 
@@ -135,7 +119,6 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
     p = p + 1
 	
     gc()
-
   } # while(p < maxIter & logLik - lastLogLik > epsilon
   print(date())
   
@@ -150,15 +133,12 @@ hmm.intensity = function(data, founders, sex, snps, chr, trans.prob.fxn,
   
   return(list(prsmth = init.hmm$prsmth, params = params))
 } # hmm.intensity()
-
 ########################################################################
 # New function for X,Y intensties.
 hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
-
   # Estimate the (x, y) genotype cluster means and variances.
   params = estimate.cluster.params2(founders = founders, data = data, chr = chr)
   save(params, file = paste0("chr", chr, ".initial.cluster.params.Rdata"))
-
   # Set negative values to NA for this. They will be removed when we take the 
   # means.
   neg = which(founders$x < 0| founders$y < 0)
@@ -166,14 +146,12 @@ hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
     founders$x[neg] = NA
     founders$y[neg] = NA	
   } # if(length(neg) > 0)
-
   # We need to remove the founders that are not part of the possible 
   # states for the DO/F1 to work.
   founders$x = founders$x[founders$code %in% founders$states,]
   founders$y = founders$y[founders$code %in% founders$states,]
   founders$sex  = founders$sex[founders$code  %in% founders$states]
   founders$code = founders$code[founders$code %in% founders$states]
-
   # Now that we have estimated initial cluster parameters from the founder
   # data, condense the founders down to thier means.
   # For some reason, split and tapply don't work here.
@@ -188,13 +166,11 @@ hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
                  ncol(founders$y), byrow = TRUE, dimnames = 
                  list(founders$states, colnames(founders$y)))
   rm(tmp)
-
   # Set NaN values to -1 in the data.
   data$x[is.na(data$x) | is.nan(data$x)] = -1.0
   data$y[is.na(data$y) | is.nan(data$y)] = -1.0
   founders$x[is.na(founders$x) | is.nan(founders$x)] = -1.0
   founders$y[is.na(founders$y) | is.nan(founders$y)] = -1.0
-
   maxIter = 100
   epsilon = 5 # NOTE: We change this in the first iteration below.
   p = 1
@@ -202,31 +178,22 @@ hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
   logLik = -.Machine$double.xmax
   init.hmm = initialize.hmm(snps = colnames(data$x), samples = 
              rownames(data$x), states = founders$states)
-
   # Estimate the initial emission probabilities.
   b = emission.probs.intensity2(data = data, params = params)
-
   if(attr(data, "sampletype") %in% c("DO", "DOF1")) {
-
     # For DO samples, we have different transition probabilities for each
     # generation.
     a = trans.prob.fxn(states = founders$states, snps = snps, chr = chr,
         sex = sex, gen = data$gen)
-
   } else {
-
     # For all other sample types, the transition probabilities are the same
     # for all samples.
     a = list(trans.prob.fxn(states = founders$states, snps = snps, chr = chr,
         sex = sex))
-
   } # else
-
   while(p <= maxIter & logLik - lastLogLik > epsilon) {
-
     print(date())
     print(p)
-
     # Optional plotting code to watch the HMM progress.
     if(FALSE) {
       layout(matrix(1:2, 1, 2))
@@ -235,17 +202,13 @@ hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
                       rho = data$rho, r.t.means = params$r.t.means, 
                       r.t.covars = params$r.t.covars)
     } # if(plot)
-
     # Initialize the log-likelihood to a large negative number.
     lastLogLik = logLik
-
     # Filter and smooth each generation separately because they each have a
     # different transition probability matrix.
     print("Filtering & smoothing...")
     lltmp = matrix(-.Machine$double.xmax, 1, 1)
-
     for(i in 1:length(a)) {
-
       # Filter
       gen = 1:nrow(data$x)
       if(any(names(data) == "gen")) {
@@ -260,32 +223,24 @@ hmm.intensity2 = function(data, founders, sex, snps, chr, trans.prob.fxn) {
                prsmth = as.double(init.hmm$prsmth[,gen,,drop = FALSE]),
                init = as.double(init.hmm$init),
                loglik = as.double(lltmp))
-
       init.hmm$prsmth[,gen,] = res$prsmth
       lltmp = addLog(lltmp, res$loglik)
-
     } # for(i)
-
     logLik = lltmp
     print(paste("LogLik =", logLik))
-
     # Set the epsilon to be 1/1000 of the starting value.
     # TBD: Is there a better way to set epsilon?
     if(p == 1) {
       epsilon = abs(logLik * 0.001)
     } # if(p == 1)
-
     # Update the parameters and state means and variances.
     print("update")
     params = parameter.update.intensity2(data = data, params = params, 
              prsmth = init.hmm$prsmth, founder.means = founders)
     b = emission.probs.intensity2(data = data, params = params)
     p = p + 1
-
     gc()
-
   } # while(p < maxIter & logLik - lastLogLik > epsilon
-
   print(date())
   
   # If we reached the end of the iterations.

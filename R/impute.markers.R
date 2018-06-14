@@ -1,5 +1,5 @@
 ################################################################################
-# Interpolate the genoprobs of a matrix from one set of markers to another.
+# Impute the genoprobs of a matrix from one set of markers to another.
 # Daniel Gatti
 # Dan.Gatti@jax.org
 # Dec. 20, 2014
@@ -11,7 +11,7 @@
 #                  impute from. Must match the marker names in data.
 #            to:  marker information (names, chr, pos) for the markers to 
 #                 impute to. May be higher or lower density than from.
-interpolate.markers = function(data, from, to) {
+impute.markers = function(data, from, to) {
   # Verify that the number of row in data and from matches.
   if(nrow(data) != nrow(from)) {
     stop(paste("Number of rows in data (", nrow(data), ") must equal the",
@@ -37,10 +37,6 @@ interpolate.markers = function(data, from, to) {
   if(max(to[,3]) > 200) {
     to[,3] = to[,3] * 1e-6
   } # if(max(to[,3]) > 200)
-  
-  # We need this to get rid of factors.
-  to[,1] = as.character(to[,1])
-  from[,1] = as.character(from[,1])
   # Impute the values by chromosome. Use the chromosomes in the smaller set.
   chr = intersect(unique(from[,2]), unique(to[,2]))
   from = from[from[,2] %in% chr,]
@@ -84,4 +80,4 @@ interpolate.markers = function(data, from, to) {
     newdata[to[,2] == c,] = newdata.c
   } # for(c)
   newdata
-} # interpolate.markers()
+} # impute.markers()

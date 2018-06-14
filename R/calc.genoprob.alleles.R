@@ -20,24 +20,18 @@
 #                  chromosome as the model progresses.
 calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
                         trans.prob.fxn = do.trans.probs, plot = FALSE) {
-
   # No NAs in geno.
   if(any(is.na(data$geno))) {
     data$geno[is.na(data$geno)] = "N"
     message("Changing NA values in genotypes to 'N'.")
   } # if(any(is.na(data$geno))
-
   # Extract the sample and founder temporary data file names.
   tmpfiles = list(dg = data$geno, fg = founders$geno)
-
   # Loop through each chromosome.
   for(curr.chr in chr) {
-
     print(paste("CHR", curr.chr))
-
     # SNPs on the current chromosome.
     cur.snps = snps[[which(names(snps) == curr.chr)]]
-
     # Read in the sample and founder data.
     chr.pattern = paste("chr", curr.chr, "\\.", sep = "")
     d = NULL # d is the variable that is loaded in the load() statements below.
@@ -47,28 +41,22 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
     founders$geno = d
     rm(d)
     gc()
-
     # If this is the X chromosome, split the samples by sex, using 36 states
     # for the females and 8 states for the males.
     if(curr.chr == "X") {
-
       if(length(data$sex) != nrow(data$geno)) {
         stop(paste("Length of data$sex (", length(data$sex),
               ") != number of rows in data$geno (", nrow(data$geno),")."))
       } # if(length(data$sex) != nrow(data$geno))
-
 #      if(!all(names(data$sex) == rownames(data$geno))) {
 #        stop("The names of data$sex do not match the names in data$geno")
 #      } # if(!all(names(data$sex) == rownames(data$geno)))
-
       # Run the females first.
       females = which(data$sex == "F")
       female.prsmth = NULL
       female.b = NULL
-
       # Only run if there are samples that are female.
       if(length(females) > 0) {
-
         print("Females")
         cur.data = list(geno = data$geno[females,], 
                    sex = data$sex[females], gen = data$gen[females])
@@ -84,19 +72,15 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
         female.prsmth = tmp$prsmth
         female.b = tmp$b
         rm(tmp)
-
       } # if(length(females) > 0)
-
       # Run the males, which only have founder states, not F1s because the 
       # males are hemizygous.
       males = which(data$sex == "M")
       male.prsmth = NULL
       male.b = NULL
-
       # Only run if there are samples that are male.  If only founders are
       # male, there's no point in running this.
       if(length(males) > 0) {
-
         print("Males")
         cur.data = list(geno = data$geno[males,], 
                    sex = data$sex[males], gen = data$gen[males])
@@ -107,7 +91,6 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
                        code = founders$code[founder.subset],
                        states = founders$states$X$M)
         cur.founders = keep.homozygotes(cur.founders)
-
         # NOTE: We treat male hemizygous mice as homozygous adn we allow a
         # het state everywhere.
         tmp = hmm.allele(data = cur.data, founders = cur.founders,
@@ -118,7 +101,6 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
         rm(tmp)
 		
       } # if(length(males) > 0)
-
       # Combine the male and female prsmth data.
       if(length(females) > 0) {
         if(length(males) > 0) {
@@ -141,7 +123,6 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
          rm(female.prsmth)
         } # else
       } else if(length(males) > 0) {
-
         prsmth = array(-.Machine$double.xmax, c(length(founders$states$X$F), 
                  nrow(data$geno), nrow(cur.snps)), dimnames = 
                  list(founders$states$X$F, rownames(data$geno), 
@@ -151,9 +132,7 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
              dimnames(prsmth)[[1]])
         prsmth[m2,m,] = male.prsmth
         rm(male.prsmth)
-
       } # else if(length(males) > 0)
-
       # Write out the smoothed probabilities and the emission probabilities.
       if(length(females) > 0) {
         write.results(prsmth = prsmth, b = female.b, output.dir = output.dir,
@@ -166,30 +145,25 @@ calc.genoprob.alleles = function(data, chr, founders, snps, output.dir = ".",
           write.results(prsmth = prsmth, b = male.b, output.dir = output.dir,
                         chr = curr.chr, all.chr = chr, sex = "M")
       } # else if(length(males))
-
     } else if (curr.chr == "Y") {
       stop("Chr Y not implemented yet.")
     } else if (curr.chr == "M") {
       stop("Chr M not implemented yet.")
     } else {
-
       # Autosomes.
       data$geno[data$geno == "-"] = "N"
       founders$geno[founders$geno == "-"] = "N"
       cur.founders = founders
       cur.founders$states = cur.founders$states$auto
-
       tmp = hmm.allele(data = data, founders = cur.founders, sex = "F", 
             snps = cur.snps, chr = curr.chr, trans.prob.fxn = trans.prob.fxn)
       prsmth = tmp$prob.mats$prsmth
       b = tmp$b
-
       # Write out the smoothed probabilities and the founder state meand and 
       # variances.
       write.results(prsmth = tmp$prsmth, b = tmp$b, output.dir = output.dir, 
 	                chr = curr.chr, all.chr = chr)
       rm(tmp)
-
     } # else
     gc()
 	

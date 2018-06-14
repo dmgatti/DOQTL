@@ -20,7 +20,6 @@ viterbi = function(data, founders, params, snps) {
     viterbi.intensity(data, founders, params, snps)
   } # else
 } # viterbi()
-
 # Helper function for allele call HMM.
 viterbi.allele = function(data, founders, params, snps) {
   unique.chr = unique(snps[,2])
@@ -37,8 +36,6 @@ viterbi.allele = function(data, founders, params, snps) {
 #             v_prob = ))
   } # for(chr)
 } # viterbi.allele()
-
-
 # Helper function forintensity HMM.
 viterbi.intensity = function(data, founders, params, snps) {
   unique.chr = unique(snps[,2])
