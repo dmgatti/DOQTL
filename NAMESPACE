@@ -47,10 +47,7 @@ export("add.missing.F1s",
        "calc.genoprob", 
 	    "categorize.variants",
 	    "cc.trans.probs",
-<<<<<<< HEAD
        "check.do.coat.color",
-=======
->>>>>>> upstream/master
 	    "chr.skeletons",
 	    "cluster.strains",
 	    "coefplot",
