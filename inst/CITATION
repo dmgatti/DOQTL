@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 citHeader("To cite the DOQTL package in publications, please use:")
 citEntry(entry = "Article", 
     author = personList(as.person("Daniel M. Gatti"), 
@@ -16,22 +15,3 @@ citEntry(entry = "Article",
         "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
         "G3 4:1623--1633")
 )
-=======
-citHeader("To cite the DOQTL package in publications, please use:")
-citEntry(entry = "Article", 
-    author = personList(as.person("Daniel M. Gatti"), 
-        as.person("Karen L. Svenson"), as.person("Andrey Shabalin"), as.person("Long-Yang Wu"),
-		as.person("William Valdar"), as.person("Petr Simecek"), as.person("Neal Goodwin"),
- 		as.person("Riyan Cheng"), as.person("Daniel Pomp"), as.person("Abraham Palmer"), 
-		as.person("Elissa J. Chesler"), as.person("Karl W. Broman"), as.person("Gary A. Churchill")),
-		title = "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
-    journal = "G3", 
-	year = 2014, 
-    volume = "4", 
-	pages = "1623--1633", 
-    url = "http://www.g3journal.org/content/4/9/1623.long", 
-    textVersion = paste(" (2014)", 
-        "Quantitative Trait Locus Mapping Methods for Diversity Outbred Mice", 
-        "G3 4:1623--1633")
-)
->>>>>>> upstream/master
