@@ -24,7 +24,4 @@
   \code{\link{get.variants}{get.variants}}
 }
 \author{ Daniel Gatti }
-\examples{
-  data(example.snps)
-  snp.type = categorize.variants(variants = example.snps[1:50,])
-}
+
