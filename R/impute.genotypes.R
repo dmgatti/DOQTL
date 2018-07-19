@@ -39,7 +39,7 @@ impute.genotypes = function(gr, probs, markers, vcf.file, hq = TRUE,
   # Check the GRanges ranges to see if they're in bp or Mb. We need to change 
   # them to bp for scan VCF to work.
   if(max(start(gr), end(gr)) < 200) {
-    gr = GRanges(seqnames = seqnames(gr), range = IRanges(
+    gr = GRanges(seqnames = seqnames(gr), ranges = IRanges(
          start = start(gr) * 1e6, end = end(gr) * 1e6))
   } # if(max(start(gr), end(gr)) < 200)
   # Put the markers on a bp scale.
