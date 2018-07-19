@@ -5,7 +5,7 @@
 # dan.gatti@jax.org
 # 
 ##########################################################################################
-scanone.perm = function(pheno, pheno.col = 1, probs, K = K, addcovar, intcovar, snps,
+scanone.perm = function(pheno, pheno.col = 1, probs, addcovar, intcovar, snps,
                model = c("additive", "full"), path = ".", nperm = 1000,
                return.val = c("lod", "p")) {
   return.val = match.arg(return.val)

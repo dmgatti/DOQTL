@@ -13,7 +13,6 @@ static const R_CMethodDef cMethods[]  = {
     {"update_intensity", (DL_FUNC) &update_intensity, 10},
     {"update_intensity2", (DL_FUNC) &update_intensity2, 11},
     {"update_alleles", (DL_FUNC) &update_alleles, 5},
-    {"viterbi", (DL_FUNC) &viterbi, 5},
     {"DO_autosome_recomb_freq", (DL_FUNC) &DO_autosome_recomb_freq, 7},
     {"DO_maleX_recomb_freq", (DL_FUNC) &DO_maleX_recomb_freq, 7},
     {"DO_femaleX_recomb_freq", (DL_FUNC) &DO_femaleX_recomb_freq, 7},

@@ -24,8 +24,6 @@ void update_intensity2(int* dims, double* x, double* y, double* xmeans,
 void update_alleles(int* dims,int* geno, double* b, double* pseudo, 
                            double* prsmth);
 
-void viterbi(int* dims, double* a, double* b, int* v_path, double* v_prob);
-
 void DO_autosome_recomb_freq(double* r, int* s, int* n_k, int *k, double *alpha_k, 
 		               int* num_recomb, double* recomb);
 

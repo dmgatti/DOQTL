@@ -10,7 +10,7 @@
 \usage{
   qtl.LRS(pheno, probs, snps, addcovar = NULL)
   permutations.qtl.LRS(pheno, probs, snps, addcovar, nperm = 1000, 
-  return.val = c("lrs", "p"))
+  return.val = c("lod", "p"))
 }
 \arguments{
   \item{pheno}{
