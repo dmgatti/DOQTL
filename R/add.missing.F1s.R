@@ -143,6 +143,7 @@ add.missing.F1s = function(founders, snps, sampletype = c("DO", "CC", "DOF1",
     } else if(mthd == "intensity") {
       # Intensities
       # Add rows for the new F1s.
+print(missing$code)
       founders$x = as.matrix(rbind(founders$x, matrix(0, length(missing$code), 
                    ncol(founders$x), dimnames = list(missing$code,
                    colnames(founders$x)))))
