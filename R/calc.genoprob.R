@@ -518,12 +518,12 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
   yfile    = NULL
   genofile = NULL
   if(array == "muga") {
-    snpfile  = "ftp://ftp.jax.org/MUGA/muga_snps.Rdata"
-    sexfile  = "ftp://ftp.jax.org/MUGA/muga_sex.Rdata"
-    codefile = "ftp://ftp.jax.org/MUGA/muga_code.Rdata"
-    xfile    = "ftp://ftp.jax.org/MUGA/muga_x.Rdata"
-    yfile    = "ftp://ftp.jax.org/MUGA/muga_y.Rdata"
-    genofile = "ftp://ftp.jax.org/MUGA/muga_geno.Rdata"
+    snpfile  = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_snps.Rdata"
+    sexfile  = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_sex.Rdata"
+    codefile = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_code.Rdata"
+    xfile    = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_x.Rdata"
+    yfile    = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_y.Rdata"
+    genofile = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_geno.Rdata"
     if(sampletype == "HS") { 
       codefile = "ftp://ftp.jax.org/MUGA/muga_hs_code.Rdata"
     } # if(sampletype == "HS")
