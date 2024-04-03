@@ -99,6 +99,7 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
         # genotyping.
         snps = snps[snps[,1] %in% muga.snps.to.keep,]
         snps = snps[!is.na(snps[,4]),1:4]
+	snps = snps[!is.na(snps$chr),]
       ### MegaMUGA ###
       } else if(array == "megamuga") {
         # Get the MUGA SNPs and subset them to keep the ones that we use for 
@@ -340,10 +341,10 @@ calc.genoprob = function(data, chr = "all", output.dir = ".", plot = TRUE,
   founders$sex = toupper(founders$sex)
   # If chr == all, then change the chr value to the chromosomes we have.
   if(chr == "all") {
-    chr = unique(snps[,2])
+    chr = unique(snps$chr)
   } # if(chr == "all")
   # Subset the markers to include only the chromosomes that we are running.
-  snps = snps[snps[,2] %in% chr,]
+  snps = snps[snps$chr %in% chr,]
   # Synchronize the markers in the allele calls and snps.
   tmp = synchronize.snps(snps, data, founders)
   data = tmp$data
