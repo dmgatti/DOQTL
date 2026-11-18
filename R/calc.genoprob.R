@@ -519,22 +519,22 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
   yfile    = NULL
   genofile = NULL
   if(array == "muga") {
-    snpfile  = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_snps.Rdata"
-    sexfile  = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_sex.Rdata"
-    codefile = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_code.Rdata"
-    xfile    = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_x.Rdata"
-    yfile    = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_y.Rdata"
-    genofile = "/gedi/resource/MUGA/raw_neogen_data/MUGA/Controls/muga_geno.Rdata"
+    snpfile  = "/compsci/gedi/reference/muga_snps.Rdata"
+    sexfile  = "/compsci/gedi/reference/muga_sex.Rdata"
+    codefile = "/compsci/gedi/reference/muga_code.Rdata"
+    xfile    = "/compsci/gedi/reference/muga_x.Rdata"
+    yfile    = "/compsci/gedi/reference/muga_y.Rdata"
+    genofile = "/compsci/gedi/reference/muga_geno.Rdata"
     if(sampletype == "HS") { 
       codefile = "ftp://ftp.jax.org/MUGA/muga_hs_code.Rdata"
     } # if(sampletype == "HS")
   } else if(array == "megamuga") {
-    snpfile  = "ftp://ftp.jax.org/MUGA/MM_snps.Rdata"
-    sexfile  = "ftp://ftp.jax.org/MUGA/MM_sex.Rdata"
-    codefile = "ftp://ftp.jax.org/MUGA/MM_code.Rdata"
-    xfile    = "ftp://ftp.jax.org/MUGA/MM_x.Rdata"
-    yfile    = "ftp://ftp.jax.org/MUGA/MM_y.Rdata"
-    genofile = "ftp://ftp.jax.org/MUGA/MM_geno.Rdata"
+    snpfile  = "/compsci/gedi/reference/MM_snps.Rdata"
+    sexfile  = "/compsci/gedi/reference/MM_sex.Rdata"
+    codefile = "/compsci/gedi/reference/MM_code.Rdata"
+    xfile    = "/compsci/gedi/reference/MM_x.Rdata"
+    yfile    = "/compsci/gedi/reference/MM_y.Rdata"
+    genofile = "/compsci/gedi/reference/MM_geno.Rdata"
     if(sampletype == "HS") { 
       codefile = "ftp://ftp.jax.org/MUGA/MM_hs_code.Rdata"
     } # if(sampletype == "HS")
