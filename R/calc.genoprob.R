@@ -584,27 +584,27 @@ read.muga.data = function(array = c("gigamuga", "megamuga", "muga"),
     # genotyping.
     # We have to put this line in to satisfy R CMD build --as-cran
     MM_snps = NULL
-    load(url(snpfile))
+    load(snpfile)
     snps = MM_snps
     # We have to put this line in to satisfy R CMD build --as-cran
     MM_sex  = NULL
     MM_code = NULL
-    load(url(sexfile))
-    load(url(codefile))
+    load(sexfile)
+    load(codefile)
     retval[[1]] = snps
     retval[[2]] = MM_sex
     retval[[3]] = MM_code
     if(method == "intensity" | method == "both") {
       MM_x = NULL
       MM_y = NULL
-      load(url(xfile))
-      load(url(yfile))
+      load(xfile)
+      load(yfile)
       retval[[4]] = t(MM_x)
       retval[[5]] = t(MM_y)
     } # if(method == "intensities" | method == "both")
     if(method == "allele" | method == "both") {
       muga_geno = NULL
-      load(url(genofile))
+      load(genofile)
       retval[[6]] = t(MM_geno)
     } # if(method == "allele" | method == "both")
   } else if(array == "gigamuga") {
